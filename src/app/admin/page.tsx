@@ -1,5 +1,8 @@
 "use client";
 
+import { useAuthStore } from "@/lib/store/auth";
+import BackspaceIcon from "@mui/icons-material/Backspace";
+import PersonIcon from "@mui/icons-material/Person";
 import {
   Box,
   Button,
@@ -8,28 +11,23 @@ import {
   IconButton,
   InputLabel,
   MenuItem,
-  Paper,
   Select,
   Skeleton,
-  Stack,
   Typography,
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers";
 import moment from "moment";
-import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useState } from "react";
-import BackspaceIcon from "@mui/icons-material/Backspace";
-import PersonIcon from "@mui/icons-material/Person";
 import useSWR from "swr";
 
 const AdminPage = () => {
-  const { data } = useSession();
+  const user = useAuthStore((state) => state.user);
   const [date, setDate] = useState<any>("");
   const [status, setStatus] = useState<any>("");
   const [dateVal, setDateVal] = useState<any>(null);
   const url = `/book?book_date=${date}&approval=${status}`;
-  const { data: books } = useSWR(data && url, {
+  const { data: books } = useSWR(user && url, {
     fallback: { url: [] },
   });
 
@@ -81,7 +79,12 @@ const AdminPage = () => {
           </Box>
           <FormControl fullWidth>
             <InputLabel>Approval Status</InputLabel>
-            <Select defaultValue="" value={status} label="Approval" onChange={handleStatus}>
+            <Select
+              defaultValue=""
+              value={status}
+              label="Approval"
+              onChange={handleStatus}
+            >
               <MenuItem value="">---</MenuItem>
               <MenuItem value="pending">Pending</MenuItem>
               <MenuItem value="approved">Approved</MenuItem>
@@ -104,12 +107,19 @@ const AdminPage = () => {
         }}
       >
         {!books ? (
-          <Skeleton variant="rounded" width="100%" height={96} sx={{ bgcolor: "grey.700" }} />
+          <Skeleton
+            variant="rounded"
+            width="100%"
+            height={96}
+            sx={{ bgcolor: "grey.700" }}
+          />
         ) : (
           <Grid container spacing={16}>
             {books?.data.map((book: any) => (
               <Grid item xs={12} md={6} key={book.id}>
-                <Box sx={{ pb: 24, bgcolor: "background.card", borderRadius: 4 }}>
+                <Box
+                  sx={{ pb: 24, bgcolor: "background.card", borderRadius: 4 }}
+                >
                   <Box
                     sx={[
                       {
@@ -147,7 +157,14 @@ const AdminPage = () => {
                       <Typography variant="h3" sx={{ color: "primary.light" }}>
                         {book.agenda}
                       </Typography>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 8 }}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 2,
+                          mb: 8,
+                        }}
+                      >
                         <PersonIcon />
                         <Typography>{book.username}</Typography>
                       </Box>
@@ -157,11 +174,13 @@ const AdminPage = () => {
                     </Grid>
                     <Grid item xs={5} sx={{ textAlign: "right" }}>
                       <Typography>{book.id_ruangan}</Typography>
-                      <Typography>{moment(book.book_date).format("DD-MM-YYYY")}</Typography>
-                      <Typography>{`${book.time_start.slice(0, 5)} - ${book.time_end.slice(
+                      <Typography>
+                        {moment(book.book_date).format("DD-MM-YYYY")}
+                      </Typography>
+                      <Typography>{`${book.time_start.slice(
                         0,
                         5
-                      )}`}</Typography>
+                      )} - ${book.time_end.slice(0, 5)}`}</Typography>
                       <Box sx={{ textAlign: "right", mt: 24 }}>
                         <Link href={`/admin/approval/${book.id_book}`}>
                           <Button variant="contained">Details</Button>

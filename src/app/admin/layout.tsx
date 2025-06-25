@@ -1,14 +1,17 @@
 "use client";
 
 import WrapperAdmin from "@/common/WrapperAdmin";
-import { SWRConfig } from "swr";
-import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
+import axios from "@/lib/axios";
 import { Container } from "@mui/material";
+import { SWRConfig } from "swr";
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const axiosAuth = useAxiosAuth();
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const swrConfig = {
-    fetcher: (url: any) => axiosAuth.get(url).then((res) => res.data),
+    fetcher: (url: any) => axios.get(url).then((res) => res.data),
   };
 
   return (

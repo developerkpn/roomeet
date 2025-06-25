@@ -1,5 +1,14 @@
-import { Menu, MenuItem, Box, IconButton, Avatar, Typography } from "@mui/material";
-import { signOut, useSession } from "next-auth/react";
+import axios from "@/lib/axios";
+import { useAuthStore } from "@/lib/store/auth";
+import {
+  Avatar,
+  Box,
+  IconButton,
+  Menu,
+  MenuItem,
+  Typography,
+} from "@mui/material";
+import { useRouter } from "next/navigation";
 
 interface UserMenuProps {
   anchorEl: HTMLButtonElement | null;
@@ -7,10 +16,17 @@ interface UserMenuProps {
 }
 
 export default function UserMenu({ anchorEl, handleClose }: UserMenuProps) {
-  const handleLogout = () => {
-    signOut({ callbackUrl: "/login" });
+  const user = useAuthStore((state: any) => state.user);
+  const clearAuth = useAuthStore((state: any) => state.clearAuth);
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      await axios.post("/user/logout", {}, { withCredentials: true });
+    } catch {}
+    clearAuth();
+    router.replace("/login");
   };
-  const { data: session } = useSession();
 
   return (
     <Menu
@@ -31,12 +47,16 @@ export default function UserMenu({ anchorEl, handleClose }: UserMenuProps) {
           }}
         >
           <IconButton>
-            <Avatar>{session?.user?.username?.slice(0, 2).toUpperCase()}</Avatar>
+            <Avatar>{user?.username?.slice(0, 2).toUpperCase()}</Avatar>
           </IconButton>
-          <Typography>{session?.user?.name?.split(" ")[0]}</Typography>
+          <Typography>{user?.name?.split(" ")[0]}</Typography>
         </Box>
       </MenuItem>
-      <MenuItem onClick={() => "Notification" in window && Notification.requestPermission()}>
+      <MenuItem
+        onClick={() =>
+          "Notification" in window && Notification.requestPermission()
+        }
+      >
         Notif Settings
       </MenuItem>
       <MenuItem onClick={handleLogout} sx={{ width: "10rem" }}>

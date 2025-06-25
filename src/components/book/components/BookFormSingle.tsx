@@ -1,7 +1,14 @@
 "use client";
 
+import ConfirmationDialog from "@/common/ConfirmationDialog";
 import DatePickerComp from "@/common/DatePicker";
-import { useForm } from "react-hook-form";
+import NumericFieldComp from "@/common/NumericField";
+import RadioComp from "@/common/Radio";
+import { CardsBookSkeleton } from "@/common/skeletons/CardSkeleton";
+import { TextFieldComp } from "@/common/TextField";
+import TimePickerComp from "@/common/TimePicker";
+import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
+import { useAuthStore } from "@/lib/store/auth";
 import {
   Alert,
   Box,
@@ -12,22 +19,14 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import TimePickerComp from "@/common/TimePicker";
-import { CardRooms } from "./CardRoom";
-import { TextFieldComp } from "@/common/TextField";
-import { useEffect, useState } from "react";
-import { Suspense } from "react";
-import { CardsBookSkeleton } from "@/common/skeletons/CardSkeleton";
-import NumericFieldComp from "@/common/NumericField";
-import { format } from "date-fns";
-import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
-import { useSession } from "next-auth/react";
-import toast from "react-hot-toast";
 import axios, { AxiosError } from "axios";
+import { format } from "date-fns";
 import moment from "moment";
 import { useRouter } from "next/navigation";
-import ConfirmationDialog from "@/common/ConfirmationDialog";
-import RadioComp from "@/common/Radio";
+import { Suspense, useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import toast from "react-hot-toast";
+import { CardRooms } from "./CardRoom";
 
 interface DefaultVal {
   dateBook: Date;
@@ -44,7 +43,7 @@ interface DefaultVal {
 
 export default function BookFormSingle({ editData }: { editData: any }) {
   const router = useRouter();
-  const { data } = useSession();
+  const user = useAuthStore((state) => state.user);
   const axiosAuth = useAxiosAuth();
   const form = useForm({
     defaultValues: {
@@ -82,13 +81,13 @@ export default function BookFormSingle({ editData }: { editData: any }) {
     const checkPenalty = async () => {
       try {
         const res = await axiosAuth.patch("/user/penalty", {
-          id_user: data?.user.id_user,
+          id_user: user?.id_user,
         });
         if (res.data.changed) {
           toast.success(res.data.message);
         }
       } catch (error: any) {
-        if (error?.response && data?.user.id_user) {
+        if (error?.response && user?.id_user) {
           console.error(error);
           setPenalty(error?.response.data.message);
         } else {
@@ -118,13 +117,16 @@ export default function BookFormSingle({ editData }: { editData: any }) {
         "hours"
       );
       const tempMinute =
-        moment(form.getValues("endTime")).diff(moment(form.getValues("startTime")), "minutes") % 60;
+        moment(form.getValues("endTime")).diff(
+          moment(form.getValues("startTime")),
+          "minutes"
+        ) % 60;
 
       setHour(tempHour);
       setMinute(tempMinute);
     }
     // console.log(form.getValues());
-  }, [editData, form, isEdit, axiosAuth, data?.user.id_user]);
+  }, [editData, form, isEdit, axiosAuth, user?.id_user]);
 
   console.log("edit data", editData);
   console.log("formatted edit", form.getValues());
@@ -147,7 +149,7 @@ export default function BookFormSingle({ editData }: { editData: any }) {
     setLoading(true);
     const payload = {
       id_ruangan: values.ruangan,
-      id_user: data?.user.id_user,
+      id_user: user?.id_user,
       book_date: format(values.dateBook, "Y-L-d"),
       time_start: format(values.startTime as Date, "HH:mm"),
       time_end: format(values.endTime as Date, "HH:mm"),
@@ -207,7 +209,9 @@ export default function BookFormSingle({ editData }: { editData: any }) {
       console.log(payload);
 
       try {
-        const res = await axiosAuth.post("/room/search-avail", { data: payload });
+        const res = await axiosAuth.post("/room/search-avail", {
+          data: payload,
+        });
         if (res.data.data.length === 0) {
           toast.error("Ruangan tidak tersedia");
         } else {
@@ -239,7 +243,9 @@ export default function BookFormSingle({ editData }: { editData: any }) {
         <Grid container spacing={16}>
           <Grid item xs={12} md={6}>
             {penalty && <Alert severity="error">{penalty}</Alert>}
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 8, py: 24 }}>
+            <Box
+              sx={{ display: "flex", flexDirection: "column", gap: 8, py: 24 }}
+            >
               <DatePickerComp
                 name="dateBook"
                 label="Booking Date"
@@ -248,7 +254,8 @@ export default function BookFormSingle({ editData }: { editData: any }) {
                   required: "Field required",
                   validate: {
                     minDate: (value: any) =>
-                      new Date(value).setHours(0, 0, 0, 0) >= new Date().setHours(0, 0, 0, 0) ||
+                      new Date(value).setHours(0, 0, 0, 0) >=
+                        new Date().setHours(0, 0, 0, 0) ||
                       "Booking date can't be in the past",
                     max30Days: (value: any) => {
                       const diffDays = moment(value).diff(moment(), "days");
@@ -277,7 +284,8 @@ export default function BookFormSingle({ editData }: { editData: any }) {
                           new Date().setHours(0, 0, 0, 0)
                         ) {
                           return (
-                            new Date(value).getHours() >= new Date().getHours() ||
+                            new Date(value).getHours() >=
+                              new Date().getHours() ||
                             "Start time can't be in the past"
                           );
                         }
@@ -286,8 +294,12 @@ export default function BookFormSingle({ editData }: { editData: any }) {
                   }}
                   onChangeOvr={(value) => {
                     const tempStartTime = value;
-                    const tempHour = moment(endTime).diff(moment(value), "hours");
-                    const tempMinute = moment(endTime).diff(moment(value), "minutes") % 60;
+                    const tempHour = moment(endTime).diff(
+                      moment(value),
+                      "hours"
+                    );
+                    const tempMinute =
+                      moment(endTime).diff(moment(value), "minutes") % 60;
 
                     setStartTime(tempStartTime);
                     setHour(tempHour);
@@ -304,8 +316,12 @@ export default function BookFormSingle({ editData }: { editData: any }) {
                   }}
                   onChangeOvr={(value) => {
                     const tempEndTime = value;
-                    const tempHour = moment(value).diff(moment(startTime), "hours");
-                    const tempMinute = moment(value).diff(moment(startTime), "minutes") % 60;
+                    const tempHour = moment(value).diff(
+                      moment(startTime),
+                      "hours"
+                    );
+                    const tempMinute =
+                      moment(value).diff(moment(startTime), "minutes") % 60;
 
                     setEndTime(tempEndTime);
                     setHour(tempHour);
@@ -324,7 +340,9 @@ export default function BookFormSingle({ editData }: { editData: any }) {
                     label="Hour"
                     variant="outlined"
                     error={!!formState.errors.hour}
-                    helperText={formState.errors.hour ? formState.errors.hour.message : ""}
+                    helperText={
+                      formState.errors.hour ? formState.errors.hour.message : ""
+                    }
                     {...register("hour", {
                       min: {
                         value: 0,
@@ -339,7 +357,11 @@ export default function BookFormSingle({ editData }: { editData: any }) {
                     label="Minute"
                     variant="outlined"
                     error={!!formState.errors.minute}
-                    helperText={formState.errors.minute ? formState.errors.minute.message : ""}
+                    helperText={
+                      formState.errors.minute
+                        ? formState.errors.minute.message
+                        : ""
+                    }
                     {...register("minute", {
                       validate: {
                         minimum: (value: any) => {
@@ -366,7 +388,10 @@ export default function BookFormSingle({ editData }: { editData: any }) {
                   }}
                   onChangeOvr={() => setChanged(true)}
                 />
-                <input {...register("ruangan", { required: "Please input" })} hidden={true} />
+                <input
+                  {...register("ruangan", { required: "Please input" })}
+                  hidden={true}
+                />
               </Box>
               <RadioComp
                 name="category"
@@ -375,8 +400,16 @@ export default function BookFormSingle({ editData }: { editData: any }) {
                 control={form.control}
                 onChangeOvr={() => setChanged(true)}
               >
-                <FormControlLabel value="INT" control={<Radio />} label="Internal" />
-                <FormControlLabel value="EXT" control={<Radio />} label="External" />
+                <FormControlLabel
+                  value="INT"
+                  control={<Radio />}
+                  label="Internal"
+                />
+                <FormControlLabel
+                  value="EXT"
+                  control={<Radio />}
+                  label="External"
+                />
               </RadioComp>
               <Button
                 variant="outlined"
@@ -389,7 +422,14 @@ export default function BookFormSingle({ editData }: { editData: any }) {
           </Grid>
           <Grid item xs={12} md={6}>
             {available ? (
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 8, py: 24 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 8,
+                  py: 24,
+                }}
+              >
                 <Typography>Rooms:</Typography>
                 <Suspense fallback={<CardsBookSkeleton />}>
                   <CardRooms
@@ -450,7 +490,9 @@ export default function BookFormSingle({ editData }: { editData: any }) {
                 )}
               </Box>
             ) : (
-              <Typography sx={{ py: 24, color: "grey.500", textAlign: "center" }}>
+              <Typography
+                sx={{ py: 24, color: "grey.500", textAlign: "center" }}
+              >
                 Please check available room first
               </Typography>
             )}

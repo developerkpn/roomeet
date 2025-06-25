@@ -1,19 +1,18 @@
 "use client";
 
-import { Box, Grid, IconButton, Typography } from "@mui/material";
-import { useSession } from "next-auth/react";
-import useSWR from "swr";
-import { CardsListBookSkeleton } from "@/common/skeletons/CardSkeleton";
-import Link from "next/link";
-import { axiosAuth } from "@/lib/axios";
-import axios, { AxiosError } from "axios";
-import toast from "react-hot-toast";
 import ConfirmationDialog from "@/common/ConfirmationDialog";
-import EditIcon from "@mui/icons-material/Edit";
+import { CardsListBookSkeleton } from "@/common/skeletons/CardSkeleton";
+import { axiosAuth } from "@/lib/axios";
+import { useAuthStore } from "@/lib/store/auth";
 import ClearIcon from "@mui/icons-material/Clear";
+import EditIcon from "@mui/icons-material/Edit";
+import { Box, Grid, IconButton, Typography } from "@mui/material";
+import axios, { AxiosError } from "axios";
 import moment from "moment";
+import Link from "next/link";
 import { useEffect, useState } from "react";
-import { set } from "date-fns";
+import toast from "react-hot-toast";
+import useSWR from "swr";
 
 interface CardListBookProp {
   agendaTitle: string;
@@ -97,7 +96,9 @@ function CardListBook({
               {agendaTitle}
             </Typography>
             <Typography variant="h4">{room}</Typography>
-            <Typography>{`${moment(bookDate).format("DD/MM/YYYY")}`}</Typography>
+            <Typography>{`${moment(bookDate).format(
+              "DD/MM/YYYY"
+            )}`}</Typography>
             <Typography>{`${startTime} - ${endTime}`}</Typography>
           </Grid>
           <Grid
@@ -189,15 +190,15 @@ function CardListBook({
 }
 
 export function CardsListBook({ date, status }: any) {
-  const { data } = useSession();
-  const url = `/book/show?id_user=${data?.user?.id_user}&book_date=${date}&status=${status}`;
+  const user = useAuthStore((state) => state.user);
+  const url = `/book/show?id_user=${user?.id_user}&book_date=${date}&status=${status}`;
   const {
     data: agendas,
     error,
     isLoading,
     mutate,
     isValidating,
-  } = useSWR(data && url, {
+  } = useSWR(user && url, {
     suspense: true,
     fallback: {
       [url]: [],
@@ -228,7 +229,11 @@ export function CardsListBook({ date, status }: any) {
         {!isLoading &&
           agendasData &&
           agendasData.map((item) => (
-            <CardListBook {...item} mutate={mutate} key={item.id_book + item.id_room} />
+            <CardListBook
+              {...item}
+              mutate={mutate}
+              key={item.id_book + item.id_room}
+            />
           ))}
       </Grid>
       {isLoading && !agendasData && <CardsListBookSkeleton />}

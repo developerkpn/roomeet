@@ -1,27 +1,28 @@
 "use client";
 
-import DigitalClock from "./DigitalClock";
-import {
-  Button,
-  Typography,
-  Grid,
-  Box,
-  Skeleton,
-  Alert,
-  Tooltip,
-  Link as MuiLink,
-} from "@mui/material";
-import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
+import ConfirmationDialog from "@/common/ConfirmationDialog";
+import axios from "@/lib/axios";
 import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
+import { useAuthStore } from "@/lib/store/auth";
+import {
+  Alert,
+  Box,
+  Button,
+  Grid,
+  Skeleton,
+  Tooltip,
+  Typography,
+} from "@mui/material";
+import moment from "moment";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import useSWR from "swr";
-import moment from "moment";
-import ConfirmationDialog from "@/common/ConfirmationDialog";
-import Link from "next/link";
+import DigitalClock from "./DigitalClock";
 
 const Home = () => {
-  const { data } = useSession();
+  const user = useAuthStore((state) => state.user);
+  console.log(user, "user");
   const axiosAuth = useAxiosAuth();
   const [counter, setCounter] = useState<number>();
   const [penalty, setPenalty] = useState();
@@ -35,13 +36,14 @@ const Home = () => {
 
     const checkPenalty = async () => {
       try {
-        const res = await axiosAuth.patch("/user/penalty", {
-          id_user: data?.user.id_user,
+        const res = await axios.patch("/user/penalty", {
+          id_user: user?.id_user,
         });
+        console.log(res, "res");
         setCounter(res.data.counter);
       } catch (error: any) {
-        if (error?.response && data?.user.id_user) {
-          console.error(error);
+        if (error?.response && user?.id_user) {
+          console.error(error, "error fetching penalty");
           setCounter(error?.response.data.counter);
           setPenalty(error?.response.data.message);
         } else {
@@ -50,27 +52,27 @@ const Home = () => {
       }
     };
     checkPenalty();
-  }, [data?.user.id_user, axiosAuth]);
+  }, [user?.id_user, axiosAuth]);
 
-  const ciUrl = `/book/checkin/${data?.user.id_user}`;
-  const coUrl = `/book/checkout/${data?.user.id_user}`;
-  const bookUrl = `/book/show?id_user=${data?.user.id_user}&active=T&limit=2`;
+  const ciUrl = `/book/checkin/${user?.id_user}`;
+  const coUrl = `/book/checkout/${user?.id_user}`;
+  const bookUrl = `/book/show?id_user=${user?.id_user}&active=T&limit=2`;
 
-  const { data: checkin, mutate: ciMutate } = useSWR(data && ciUrl, {
+  const { data: checkin, mutate: ciMutate } = useSWR(user && ciUrl, {
     fallback: { ciUrl: [] },
   });
 
-  const { data: checkout, mutate: coMutate } = useSWR(data && coUrl, {
+  const { data: checkout, mutate: coMutate } = useSWR(user && coUrl, {
     fallback: { coUrl: [] },
   });
 
-  const { data: books, mutate: bookMutate } = useSWR(data && bookUrl, {
+  const { data: books, mutate: bookMutate } = useSWR(user && bookUrl, {
     fallback: { coUrl: [] },
   });
 
   const handleCheckIn = async (id_user: any, id_book: any) => {
     try {
-      const res = await axiosAuth.patch("/book/checkin", {
+      const res = await axios.patch("/book/checkin", {
         data: {
           id_user: id_user,
           id_book: id_book,
@@ -86,7 +88,7 @@ const Home = () => {
 
   const handleCheckOut = async (id_user: any, id_book: any) => {
     try {
-      const res = await axiosAuth.patch("/book/checkout", {
+      const res = await axios.patch("/book/checkout", {
         data: {
           id_user: id_user,
           id_book: id_book,
@@ -105,10 +107,10 @@ const Home = () => {
         <Typography variant="h1" sx={{ color: "primary.main" }}>
           Welcome!{" "}
           <Box component="span" sx={{ color: "white" }}>
-            {data?.user.name}
+            {user?.name}
           </Box>
         </Typography>
-        {data?.user.role_id === process.env.NEXT_PUBLIC_ADMIN_ID && (
+        {user?.role_id === process.env.NEXT_PUBLIC_ADMIN_ID && (
           <Link href="/admin">
             <Button variant="outlined">To Admin</Button>
           </Link>
@@ -147,19 +149,23 @@ const Home = () => {
                     <Typography variant="h2">{ci.agenda}</Typography>
                     <Typography variant="h3">{ci.id_ruangan}</Typography>
                     <Typography variant="h3" sx={{ fontWeight: "regular" }}>
-                      {`${ci.time_start} - ${ci.time_end} | ${moment(ci.book_date).format(
-                        "DD/MM/YYYY"
-                      )}`}
+                      {`${ci.time_start} - ${ci.time_end} | ${moment(
+                        ci.book_date
+                      ).format("DD/MM/YYYY")}`}
                     </Typography>
                     <ConfirmationDialog
                       title="Confirm Check In"
                       desc="Are you sure you want to check in?"
                       action="Check In"
-                      response={() => handleCheckIn(data?.user.id_user, ci.id_book)}
+                      response={() => handleCheckIn(user?.id_user, ci.id_book)}
                       type="button"
                     >
                       {(showDialog: any) => (
-                        <Button variant="contained" fullWidth onClick={showDialog}>
+                        <Button
+                          variant="contained"
+                          fullWidth
+                          onClick={showDialog}
+                        >
                           Check In
                         </Button>
                       )}
@@ -170,11 +176,18 @@ const Home = () => {
             </Grid>
           ) : (
             // Loading finished and data dont exist
-            <Typography sx={{ color: "grey.500" }}>No upcoming meeting</Typography>
+            <Typography sx={{ color: "grey.500" }}>
+              No upcoming meeting
+            </Typography>
           )
         ) : (
           // Loading UI
-          <Skeleton variant="rounded" width="100%" height={64} sx={{ bgcolor: "grey.700" }} />
+          <Skeleton
+            variant="rounded"
+            width="100%"
+            height={64}
+            sx={{ bgcolor: "grey.700" }}
+          />
         )}
       </Box>
 
@@ -199,20 +212,25 @@ const Home = () => {
                     <Typography variant="h2">{co.agenda}</Typography>
                     <Typography variant="h3">{co.id_ruangan}</Typography>
                     <Typography variant="h3" sx={{ fontWeight: "regular" }}>
-                      {`${co.time_start} - ${co.time_end} | ${moment(co.book_date).format(
-                        "DD/MM/YYYY"
-                      )}`}
+                      {`${co.time_start} - ${co.time_end} | ${moment(
+                        co.book_date
+                      ).format("DD/MM/YYYY")}`}
                     </Typography>
                     <ConfirmationDialog
                       title="Confirm Check Out"
                       desc="Are you sure you want to check out?"
                       action="Check Out"
-                      response={() => handleCheckOut(data?.user.id_user, co.id_book)}
+                      response={() => handleCheckOut(user?.id_user, co.id_book)}
                       type="button"
                       color="error"
                     >
                       {(showDialog: any) => (
-                        <Button color="error" variant="contained" fullWidth onClick={showDialog}>
+                        <Button
+                          color="error"
+                          variant="contained"
+                          fullWidth
+                          onClick={showDialog}
+                        >
                           Check Out
                         </Button>
                       )}
@@ -222,11 +240,18 @@ const Home = () => {
               ))}
             </Grid>
           ) : (
-            <Typography sx={{ color: "grey.500" }}>Please check in first</Typography>
+            <Typography sx={{ color: "grey.500" }}>
+              Please check in first
+            </Typography>
           )
         ) : (
           // Loading UI
-          <Skeleton variant="rounded" width="100%" height={64} sx={{ bgcolor: "grey.700" }} />
+          <Skeleton
+            variant="rounded"
+            width="100%"
+            height={64}
+            sx={{ bgcolor: "grey.700" }}
+          />
         )}
       </Box>
 
@@ -253,9 +278,9 @@ const Home = () => {
                         <Typography variant="h2">{book.agenda}</Typography>
                         <Typography variant="h3">{book.id_room}</Typography>
                         <Typography variant="h4" sx={{ fontWeight: "regular" }}>
-                          {`${book.time_start} - ${book.time_end} | ${moment(book.book_date).format(
-                            "DD/MM/YYYY"
-                          )}`}
+                          {`${book.time_start} - ${book.time_end} | ${moment(
+                            book.book_date
+                          ).format("DD/MM/YYYY")}`}
                         </Typography>
                       </Grid>
                       <Grid item xs={4}>
@@ -294,7 +319,12 @@ const Home = () => {
           )
         ) : (
           // Loading UI
-          <Skeleton variant="rounded" width="100%" height={64} sx={{ bgcolor: "grey.700" }} />
+          <Skeleton
+            variant="rounded"
+            width="100%"
+            height={64}
+            sx={{ bgcolor: "grey.700" }}
+          />
         )}
       </Box>
     </Box>

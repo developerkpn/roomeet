@@ -1,47 +1,68 @@
-import { axiosAuth } from "../axios";
-import { useSession } from "next-auth/react";
+import { useAuthStore } from "@/lib/store/auth";
+import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import axios from "../axios";
 import { useRefreshToken } from "./useRefreshToken";
 
 const useAxiosAuth = () => {
-  const { data: session } = useSession();
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const clearAuth = useAuthStore((state) => state.clearAuth);
   const refreshToken = useRefreshToken();
+  const router = useRouter();
 
   useEffect(() => {
-    const requestIntercept = axiosAuth.interceptors.request.use(
+    const requestIntercept = axios.interceptors.request.use(
       (config) => {
-        if (!config.headers["Authorization"]) {
-          config.headers[
-            "Authorization"
-          ] = `Bearer ${session?.user?.accessToken}`;
+        if (accessToken && !config.headers["Authorization"]) {
+          config.headers["Authorization"] = `Bearer ${accessToken}`;
         }
         return config;
       },
       (error) => Promise.reject(error)
     );
 
-    const responseIntercept = axiosAuth.interceptors.response.use(
+    const responseIntercept = axios.interceptors.response.use(
       (response) => response,
       async (error) => {
         const prevRequest = error?.config;
-        if (error?.response.status === 401 && !prevRequest?.sent) {
-          prevRequest.sent = true;
-          await refreshToken();
-          prevRequest.headers[
-            "Authorization"
-          ] = `Bearer ${session?.user?.accessToken}`;
-          return axiosAuth(prevRequest);
+        if (
+          (error?.response?.status === 401 ||
+            error?.response?.status === 403) &&
+          !prevRequest?._retry
+        ) {
+          prevRequest._retry = true;
+          try {
+            await refreshToken();
+            // Get the new access token from Zustand
+            const newAccessToken = useAuthStore.getState().accessToken;
+            if (newAccessToken) {
+              prevRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
+              return axios(prevRequest);
+            }
+          } catch (refreshError) {
+            clearAuth();
+            router.replace("/login");
+            return Promise.reject(refreshError);
+          }
+        }
+        // If refresh fails or not a 401/403, clear auth and redirect
+        if (
+          error?.response?.status === 401 ||
+          error?.response?.status === 403
+        ) {
+          clearAuth();
+          router.replace("/login");
         }
         return Promise.reject(error);
       }
     );
     return () => {
-      axiosAuth.interceptors.request.eject(requestIntercept);
-      axiosAuth.interceptors.response.eject(responseIntercept);
+      axios.interceptors.request.eject(requestIntercept);
+      axios.interceptors.response.eject(responseIntercept);
     };
-  }, [session, refreshToken]);
+  }, [accessToken, refreshToken, clearAuth, router]);
 
-  return axiosAuth;
+  return axios;
 };
 
 export default useAxiosAuth;

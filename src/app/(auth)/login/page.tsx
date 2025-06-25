@@ -1,14 +1,21 @@
 "use client";
 import { PasswordWithEyes } from "@/common/PasswordWithEyes";
 import { TextFieldComp } from "@/common/TextField";
-import { useForm } from "react-hook-form";
-import { Box, Button, CircularProgress, Typography } from "@mui/material";
-import { Link as MuiLink } from "@mui/material";
-import { useState } from "react";
-import { signIn, getSession } from "next-auth/react";
-import toast from "react-hot-toast";
+import axios from "@/lib/axios";
 import { useSWReg } from "@/lib/provider/SWRegProvider";
+import { useAuthStore } from "@/lib/store/auth";
+import {
+  Box,
+  Button,
+  CircularProgress,
+  Link as MuiLink,
+  Typography,
+} from "@mui/material";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import toast from "react-hot-toast";
 
 interface LoginInput {
   username: string;
@@ -40,6 +47,9 @@ const base64ToUint8Array = (base64: any) => {
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
+  const setAccessToken = useAuthStore((state) => state.setAccessToken);
+  const setUser = useAuthStore((state) => state.setUser);
+  const navigate = useRouter();
 
   const SW = useSWReg();
   const SWReg = SW?.SWReg;
@@ -58,49 +68,44 @@ export default function LoginPage() {
         if (SWReg && Notification?.permission === "granted") {
           sub = await SWReg?.pushManager.subscribe({
             userVisibleOnly: true,
-            applicationServerKey: base64ToUint8Array(process.env.NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY),
+            applicationServerKey: base64ToUint8Array(
+              process.env.NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY
+            ),
           });
         }
       }
-      let payload: Payload = {
+      let payload: any = {
         username: values.username,
         password: values.password,
         subscription: sub && JSON.stringify({ sub }),
-        callbackUrl: "/",
-        redirect: false,
       };
       if (payload.subscription === null) {
         delete payload.subscription;
       }
-      console.log(sub);
-      const res = await signIn("credentials", payload as any);
-      console.log("RESPON", res);
-
-      if (res?.status === 200) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        const session = await getSession();
-
-        if (session?.user.role_id === process.env.NEXT_PUBLIC_USER_ID) {
-          location.replace("/dashboard");
-        } else if (session?.user.role_id === process.env.NEXT_PUBLIC_ADMIN_ID) {
-          location.replace("/admin");
+      const res = await axios.post("/user/login", payload, {
+        withCredentials: true,
+      });
+      if (res?.status === 200 && res.data?.data) {
+        setAccessToken(res.data.data.accessToken);
+        setUser(res.data.data);
+        if (res.data.data.role_id === process.env.NEXT_PUBLIC_USER_ID) {
+          navigate.push("/dashboard");
+        } else if (res.data.data.role_id === process.env.NEXT_PUBLIC_ADMIN_ID) {
+          navigate.push("/admin");
         } else {
           setLoading(false);
           toast("Please try again");
         }
       } else if (res?.status === 401) {
-        if (res.error) {
-          toast.error(JSON.parse(res.error).message);
-        } else {
-          toast.error("Error");
-        }
+        toast.error(res.data?.message || "Error");
         setLoading(false);
       } else {
         toast.error("❌ Failed to login");
         setLoading(false);
       }
-    } catch (error) {
-      console.error("login error", error);
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Server Error");
+      setLoading(false);
     }
   };
 
@@ -112,7 +117,11 @@ export default function LoginPage() {
         </Typography>
         <Typography variant="h2">Login</Typography>
       </Box>
-      <Box component="form" onSubmit={handleSubmit(loginUser)} sx={{ width: "100%" }}>
+      <Box
+        component="form"
+        onSubmit={handleSubmit(loginUser)}
+        sx={{ width: "100%" }}
+      >
         <Box sx={{ mb: 12 }}>
           <TextFieldComp
             control={control}
