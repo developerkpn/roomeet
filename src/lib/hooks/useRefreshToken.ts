@@ -1,7 +1,7 @@
 "use client";
 
+import axios from "@/lib/axios";
 import { useAuthStore } from "@/lib/store/auth";
-import axios from "../axios";
 
 export const useRefreshToken = () => {
   const setAccessToken = useAuthStore((state: any) => state.setAccessToken);
@@ -10,13 +10,14 @@ export const useRefreshToken = () => {
     console.log("[RefreshToken] Attempting to refresh access token...");
     try {
       const res = await axios.post(
-        "/user/refreshtoken",
+        `${process.env.NEXT_PUBLIC_APPURL}/user/refreshtoken`,
         {},
         { withCredentials: true }
       );
       if (res?.data?.accessToken) {
         setAccessToken(res.data.accessToken);
         console.log("[RefreshToken] Success. New access token set.");
+        console.log(res.data.accessToken, "res.data.accessToken");
       } else {
         console.warn("[RefreshToken] No access token returned.");
       }

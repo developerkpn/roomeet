@@ -15,6 +15,8 @@ const nextConfig = {
   swcMinify: true,
   output: "standalone",
   images: {
+    loader: "custom",
+    loaderFile: "./src/lib/imageLoader.ts",
     remotePatterns: [
       {
         protocol: "https",
@@ -44,7 +46,19 @@ const nextConfig = {
         protocol: "http",
         hostname: "localhost",
         port: "5000",
-        pathname: "/static/**",
+        pathname: "/be-api/static/**",
+      },
+      {
+        protocol: "https",
+        hostname: "localhost",
+        port: "5000",
+        pathname: "/be-api/static/**",
+      },
+      {
+        protocol: "https",
+        hostname: "localhost",
+        port: "5001",
+        pathname: "/be-api/static/**",
       },
     ],
   },

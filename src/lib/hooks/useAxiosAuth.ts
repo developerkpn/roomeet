@@ -1,7 +1,7 @@
+import axios from "@/lib/axios";
 import { useAuthStore } from "@/lib/store/auth";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import axios from "../axios";
 import { useRefreshToken } from "./useRefreshToken";
 
 const useAxiosAuth = () => {
@@ -38,21 +38,20 @@ const useAxiosAuth = () => {
             if (newAccessToken) {
               prevRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
               return axios(prevRequest);
+            } else {
+              // No new token received, clear auth and redirect
+              clearAuth();
+              router.replace("/login");
+              return Promise.reject(new Error("No access token after refresh"));
             }
           } catch (refreshError) {
+            // Refresh failed, clear auth and redirect
             clearAuth();
             router.replace("/login");
             return Promise.reject(refreshError);
           }
         }
-        // If refresh fails or not a 401/403, clear auth and redirect
-        if (
-          error?.response?.status === 401 ||
-          error?.response?.status === 403
-        ) {
-          clearAuth();
-          router.replace("/login");
-        }
+        // For other errors, just reject without redirecting
         return Promise.reject(error);
       }
     );

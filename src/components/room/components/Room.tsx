@@ -1,5 +1,12 @@
+import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
+import useFetch from "@/lib/hooks/useFetch";
 import {
   Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   FormControl,
   Grid,
   InputLabel,
@@ -8,18 +15,17 @@ import {
   Skeleton,
   Typography,
 } from "@mui/material";
-import { useEffect, useState } from "react";
-import BigCalendar from "./BigCalendar";
-import useSWR from "swr";
-import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
-import useFetch from "@/lib/hooks/useFetch";
 import Image from "next/image";
+import { useEffect, useState } from "react";
+import useSWR from "swr";
+import BigCalendar from "./BigCalendar";
 
 const Room = () => {
   const [room, setRoom] = useState("");
   const [events, setEvents] = useState();
   const [rooms, setRooms] = useState<any>();
   const axiosAuth = useAxiosAuth();
+  const [deleteDialog, setDeleteDialog] = useState(false);
 
   let url = "";
   if (room) {
@@ -34,7 +40,9 @@ const Room = () => {
     fallback: { url: [] },
   });
 
-  const { data: roomDetails, loading } = useFetch<any>(room ? `/room/fas?id_room=${room}` : "");
+  const { data: roomDetails, loading } = useFetch<any>(
+    room ? `/room/fas?id_room=${room}` : ""
+  );
 
   useEffect(() => {
     const getRooms = async () => {
@@ -69,13 +77,26 @@ const Room = () => {
     console.log(r);
   };
 
+  const handleDelete = async () => {
+    await axiosAuth.delete(`/room/${room}`);
+    setDeleteDialog(false);
+    setRoom("");
+    const get = await axiosAuth.get("/room");
+    setRooms(get.data);
+  };
+
   return (
     <>
       <Box sx={{ display: "flex", justifyContent: "end", mt: 24 }}>
         {rooms ? (
           <FormControl fullWidth>
             <InputLabel>Select Room</InputLabel>
-            <Select defaultValue="" value={room} label="Approval" onChange={handleRoom}>
+            <Select
+              defaultValue=""
+              value={room}
+              label="Approval"
+              onChange={handleRoom}
+            >
               {rooms.map((room: any) => (
                 <MenuItem key={room.id} value={room.id_ruangan}>
                   {room.nama}
@@ -84,7 +105,12 @@ const Room = () => {
             </Select>
           </FormControl>
         ) : (
-          <Skeleton variant="rounded" width="100%" height={64} sx={{ bgcolor: "grey.700" }} />
+          <Skeleton
+            variant="rounded"
+            width="100%"
+            height={64}
+            sx={{ bgcolor: "grey.700" }}
+          />
         )}
       </Box>
       {isLoading && loading && events ? (
@@ -123,27 +149,51 @@ const Room = () => {
                 </Box>
                 <Box>
                   <Typography>{roomDetails.data[0].lokasi}</Typography>
-                  <Typography>{roomDetails.data[0].kapasitas} participants</Typography>
+                  <Typography>
+                    {roomDetails.data[0].kapasitas} participants
+                  </Typography>
                 </Box>
               </Box>
               <Box sx={{ display: "flex", flexWrap: "wrap", gap: 8, mt: 16 }}>
-                {roomDetails.data[0].fasilitas.map((item: string, idx: string) => (
-                  <Box
-                    sx={{
-                      backgroundColor: "primary.main",
-                      color: "#fafafa",
-                      px: 10,
-                      py: 4,
-                      borderRadius: 2,
-                    }}
-                    key={idx + item}
-                  >
-                    {item}
-                  </Box>
-                ))}
+                {roomDetails.data[0].fasilitas.map(
+                  (item: string, idx: string) => (
+                    <Box
+                      sx={{
+                        backgroundColor: "primary.main",
+                        color: "#fafafa",
+                        px: 10,
+                        py: 4,
+                        borderRadius: 2,
+                      }}
+                      key={idx + item}
+                    >
+                      {item}
+                    </Box>
+                  )
+                )}
               </Box>
             </Grid>
           </Grid>
+          <Button
+            color="error"
+            variant="contained"
+            sx={{ mt: 2 }}
+            onClick={() => setDeleteDialog(true)}
+          >
+            Delete Room
+          </Button>
+          <Dialog open={deleteDialog} onClose={() => setDeleteDialog(false)}>
+            <DialogTitle>Delete Room</DialogTitle>
+            <DialogContent>
+              Are you sure you want to delete this room?
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setDeleteDialog(false)}>Cancel</Button>
+              <Button color="error" onClick={handleDelete} variant="contained">
+                Delete
+              </Button>
+            </DialogActions>
+          </Dialog>
           <BigCalendar events={events} />
         </>
       ) : (
