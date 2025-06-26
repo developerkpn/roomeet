@@ -15,6 +15,7 @@ const nextConfig = {
   swcMinify: true,
   output: "standalone",
   images: {
+    unoptimized: process.env.NODE_ENV === "development",
     loader: "custom",
     loaderFile: "./src/lib/imageLoader.ts",
     remotePatterns: [

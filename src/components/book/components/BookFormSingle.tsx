@@ -46,6 +46,7 @@ export default function BookFormSingle({ editData }: { editData: any }) {
   const user = useAuthStore((state) => state.user);
   const axiosAuth = useAxiosAuth();
   const form = useForm({
+    mode: "onChange",
     defaultValues: {
       dateBook: new Date(),
       startTime: null,
@@ -268,6 +269,8 @@ export default function BookFormSingle({ editData }: { editData: any }) {
                 onChange={(value: any) => {
                   setChanged(true);
                   form.setValue("dateBook", value);
+                  // Re-validate start time when date changes
+                  form.trigger("startTime");
                 }}
               />
               <Box sx={{ display: "flex", gap: 8 }}>
@@ -278,17 +281,28 @@ export default function BookFormSingle({ editData }: { editData: any }) {
                   rules={{
                     required: "Field required",
                     validate: {
-                      minDate: (value: any) => {
+                      notInPast: (value: any) => {
+                        if (!value) return true; // Allow empty for now, required validation will handle it
+
+                        const selectedDate = form.getValues("dateBook");
+                        const now = new Date();
+
+                        // If booking date is today, check if time is in the past
                         if (
-                          form.getValues("dateBook").setHours(0, 0, 0, 0) ===
-                          new Date().setHours(0, 0, 0, 0)
+                          selectedDate &&
+                          new Date(selectedDate).setHours(0, 0, 0, 0) ===
+                            now.setHours(0, 0, 0, 0)
                         ) {
+                          const selectedDateTime = new Date(value);
+                          const currentTime = new Date();
+
                           return (
-                            new Date(value).getHours() >=
-                              new Date().getHours() ||
+                            selectedDateTime >= currentTime ||
                             "Start time can't be in the past"
                           );
                         }
+
+                        return true; // Future dates are always valid
                       },
                     },
                   }}

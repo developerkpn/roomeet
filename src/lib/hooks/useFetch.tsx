@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { axiosAuth } from "../axios";
+import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
+import { useCallback, useEffect, useState } from "react";
 
 const useFetch = <T,>(
   url: string
@@ -9,6 +9,7 @@ const useFetch = <T,>(
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<any>(null);
+  const axiosAuth = useAxiosAuth();
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -16,12 +17,14 @@ const useFetch = <T,>(
 
     try {
       const response = await axiosAuth.get(url);
+      console;
       setData(response.data);
     } catch (error) {
       setError(error);
     } finally {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url]);
 
   useEffect(() => {
