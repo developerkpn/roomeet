@@ -1,5 +1,5 @@
 import axios from "@/lib/axios";
-import { useAuthStore } from "@/lib/store/auth";
+import { useAuthStore } from "@/lib/store/useAuthStore";
 import {
   Avatar,
   Box,

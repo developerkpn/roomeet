@@ -3,7 +3,7 @@ import { PasswordWithEyes } from "@/common/PasswordWithEyes";
 import { TextFieldComp } from "@/common/TextField";
 import axios from "@/lib/axios";
 import { useSWReg } from "@/lib/provider/SWRegProvider";
-import { useAuthStore } from "@/lib/store/auth";
+import { useAuthStore } from "@/lib/store/useAuthStore";
 import {
   Box,
   Button,

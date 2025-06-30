@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuthStore } from "@/lib/store/auth";
+import { useAuthStore } from "@/lib/store/useAuthStore";
 import BackspaceIcon from "@mui/icons-material/Backspace";
 import PersonIcon from "@mui/icons-material/Person";
 import {
@@ -12,6 +12,7 @@ import {
   InputLabel,
   MenuItem,
   Select,
+  SelectChangeEvent,
   Skeleton,
   Typography,
 } from "@mui/material";
@@ -31,14 +32,14 @@ const AdminPage = () => {
     fallback: { url: [] },
   });
 
-  const handleDate = (value: any) => {
+  const handleDate = (value: Date | null) => {
     const d = moment(value).format("YYYY-MM-DD");
     setDateVal(value);
     setDate(d);
     console.log(d);
   };
 
-  const handleStatus = (e: any) => {
+  const handleStatus = (e: SelectChangeEvent<any>) => {
     const s = e.target.value;
     setStatus(s);
     console.log(s);

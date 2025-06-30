@@ -1,7 +1,7 @@
 "use client";
 
 import axios from "@/lib/axios";
-import { useAuthStore } from "@/lib/store/auth";
+import { useAuthStore } from "@/lib/store/useAuthStore";
 
 export const useRefreshToken = () => {
   const setAccessToken = useAuthStore((state: any) => state.setAccessToken);

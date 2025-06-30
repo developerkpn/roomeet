@@ -1,5 +1,7 @@
+"use client";
+
 import axios from "@/lib/axios";
-import { useAuthStore } from "@/lib/store/auth";
+import { useAuthStore } from "@/lib/store/useAuthStore";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useRefreshToken } from "./useRefreshToken";

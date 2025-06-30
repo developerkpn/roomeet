@@ -14,8 +14,23 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html>
-      <body>
+    <html lang="en" style={{ height: "100%" }}>
+      <head>
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+        />
+      </head>
+      <body
+        style={{
+          height: "100%",
+          margin: 0,
+          padding: 0,
+          overflow: "auto",
+          WebkitOverflowScrolling: "touch",
+          position: "relative",
+        }}
+      >
         <SWRegProvider>
           <StyledEngineProvider injectFirst>
             <ThemeProvider theme={theme}>

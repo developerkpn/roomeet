@@ -1,20 +1,22 @@
 "use client";
 
 import ApprovalAction from "@/components/admin/ApprovalAction";
-import { axiosAuth } from "@/lib/axios";
-import { Box, Skeleton, Typography } from "@mui/material";
+import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
 import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
+import { Box, Skeleton, Typography } from "@mui/material";
 import moment from "moment";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
 const Approval = ({ params }: { params: { id_book: string } }) => {
   const [book, setBook] = useState<any>();
+  const axiosAuth = useAxiosAuth();
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const get = await axiosAuth.get(`/book/${params.id_book}`);
+        console.log(get.data, "get.data");
         setBook(get.data);
       } catch (error: any) {
         if (error?.response) {
@@ -27,6 +29,7 @@ const Approval = ({ params }: { params: { id_book: string } }) => {
     };
 
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id_book]);
 
   return (
@@ -65,11 +68,13 @@ const Approval = ({ params }: { params: { id_book: string } }) => {
             <Typography>{book.prtcpt_ctr} participants</Typography>
           </Box>
           <Box sx={{ my: 16 }}>
-            <Typography>{moment(book.book_date).format("dddd, DD/MM/YYYY")}</Typography>
-            <Typography>{`${book.time_start.slice(0, 5)} - ${book.time_end.slice(
+            <Typography>
+              {moment(book.book_date).format("dddd, DD/MM/YYYY")}
+            </Typography>
+            <Typography>{`${book.time_start.slice(
               0,
               5
-            )}`}</Typography>
+            )} - ${book.time_end.slice(0, 5)}`}</Typography>
           </Box>
           <Typography sx={{ mb: 16 }}>
             Created by:
@@ -77,10 +82,14 @@ const Approval = ({ params }: { params: { id_book: string } }) => {
             {book.username}
           </Typography>
           <Typography>Remark:</Typography>
-          <Typography sx={{ mb: 16 }}>{book.remark ? book.remark : "---"}</Typography>
+          <Typography sx={{ mb: 16 }}>
+            {book.remark ? book.remark : "---"}
+          </Typography>
           {book.reject_note && (
             <Box>
-              <Typography sx={{ color: "error.light" }}>Reject Note:</Typography>
+              <Typography sx={{ color: "error.light" }}>
+                Reject Note:
+              </Typography>
               <Typography>{book.reject_note}</Typography>
             </Box>
           )}
@@ -89,7 +98,12 @@ const Approval = ({ params }: { params: { id_book: string } }) => {
           ) : null}
         </>
       ) : (
-        <Skeleton variant="rounded" width="100%" height={96} sx={{ bgcolor: "grey.700" }} />
+        <Skeleton
+          variant="rounded"
+          width="100%"
+          height={96}
+          sx={{ bgcolor: "grey.700" }}
+        />
       )}
     </>
   );

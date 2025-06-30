@@ -1,128 +1,256 @@
-import { useState } from "react";
-import * as datefns from "date-fns";
-import { ChevronRightIcon, ChevronLeftIcon } from "@heroicons/react/24/outline";
-import { Button, styled } from "@mui/material";
+import { ArrowBack, ArrowForward } from "@mui/icons-material";
+import { Box, Button, ButtonGroup, Typography } from "@mui/material";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
+import React from "react";
+import { NavigateAction, View } from "react-big-calendar";
 
-const ButtonToggle = styled(Button, {
-  shouldForwardProp: (prop) => prop != "ontoggle",
-})<{ ontoggle: boolean }>(({ ontoggle }) => ({
-  ...(ontoggle && {
-    backgroundColor: "#d4d4d4",
-    color: "#0a0a0a",
-    "&:hover": {
-      backgroundColor: "#a3a3a3",
-      color: "#0a0a0a",
-    },
-  }),
-  ...(!ontoggle && {
-    backgroundColor: "#0a0a0a",
-    color: "#d4d4d4",
-  }),
-}));
+interface ToolbarProps {
+  date: Date;
+  view: View;
+  views: any; // This matches what react-big-calendar passes
+  onView: (view: View) => void;
+  onNavigate: (action: NavigateAction, date?: Date) => void;
+  setView: (view: View) => void;
+  isMobile?: boolean;
+  isTablet?: boolean;
+  label: string;
+  localizer: any;
+}
 
-export default function ToolbarCust(props: any) {
-  const [viewState, setViewState] = useState("month");
+const ToolbarRBCCust: React.FC<ToolbarProps> = ({
+  date,
+  view,
+  views,
+  onView,
+  onNavigate,
+  setView,
+  isMobile = false,
+  isTablet = false,
+}) => {
+  const getDateRangeLabel = () => {
+    switch (view) {
+      case "month":
+        return format(date, "MMMM yyyy", { locale: id });
+      case "week":
+        // Calculate week start and end
+        const startOfWeek = new Date(date);
+        const dayOfWeek = startOfWeek.getDay();
+        const diff =
+          startOfWeek.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+        startOfWeek.setDate(diff);
 
-  const goToDayView = () => {
-    props.onView("day");
-    setViewState("day");
-  };
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
 
-  const goToMonthView = () => {
-    props.onView("month");
-    setViewState("month");
-  };
-
-  const backView = () => {
-    let newDate;
-    const rnDate = props.date;
-    let view = viewState;
-
-    if (view === "month") {
-      newDate = new Date(rnDate.getFullYear(), rnDate.getMonth() - 1, 1);
-    } else if (view === "day") {
-      newDate = new Date(
-        rnDate.getFullYear(),
-        rnDate.getMonth(),
-        rnDate.getDate() - 1,
-        1
-      );
+        if (startOfWeek.getMonth() === endOfWeek.getMonth()) {
+          return `${startOfWeek.getDate()}-${endOfWeek.getDate()} ${format(
+            startOfWeek,
+            "MMMM yyyy",
+            { locale: id }
+          )}`;
+        } else {
+          return `${format(startOfWeek, "d MMM", { locale: id })} - ${format(
+            endOfWeek,
+            "d MMM yyyy",
+            { locale: id }
+          )}`;
+        }
+      case "day":
+        return format(date, "EEEE, d MMMM yyyy", { locale: id });
+      default:
+        return format(date, "MMMM yyyy", { locale: id });
     }
-
-    props.onNavigate("prev", newDate);
   };
 
-  const nextView = () => {
-    let newDate;
-    const rnDate = props.date;
-    let view = viewState;
-
-    if (view === "month") {
-      newDate = new Date(rnDate.getFullYear(), rnDate.getMonth() + 1, 1);
-    } else if (view === "day") {
-      newDate = new Date(
-        rnDate.getFullYear(),
-        rnDate.getMonth(),
-        rnDate.getDate() + 1,
-        1
-      );
-    }
-
-    props.onNavigate("next", newDate);
-  };
-
-  const todayView = () => {
-    const now = new Date();
-    props.date.setMonth(now.getMonth());
-    props.date.setYear(now.getFullYear());
-    props.date.setDate(now.getDate());
-    props.onNavigate("current", now);
-  };
-
-  const label = () => {
-    let rnDate = props.date as Date;
-    let month = datefns.format(rnDate, "MMMM");
-    let year = datefns.format(rnDate, "yyyy");
-    let day = datefns.format(rnDate, "E, MM-dd-yyyy");
-    if (viewState === "month") {
-      return (
-        <span className="rbc-toolbar-label text-center">{`${month} ${year}`}</span>
-      );
-    } else {
-      return <span className="rbc-toolbar-label text-center">{`${day}`}</span>;
-    }
+  const handleViewChange = (newView: View) => {
+    setView(newView);
+    onView(newView);
   };
 
   return (
-    <div className="flex justify-between my-2 items-center">
-      <span className="flex gap-1 items-center">
-        <Button className="btn-primary h-8 w-8 " onClick={backView}>
-          <ChevronLeftIcon className="h-4 w-4" />
-        </Button>
-        <Button className="btn-primary today" onClick={todayView}>
-          Today
-        </Button>
-        <Button className="btn-primary h-8 w-8" onClick={nextView}>
-          <ChevronRightIcon className="h-4 w-4" />
-        </Button>
-      </span>
-      {label()}
-      <span className="flex gap-1">
-        <ButtonToggle
-          className="h-8"
-          ontoggle={viewState === "month"}
-          onClick={goToMonthView}
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: {
+          xs: "column", // Stack vertically on mobile
+          sm: "row", // Side by side on tablet+
+        },
+        justifyContent: "space-between",
+        alignItems: {
+          xs: "stretch", // Full width on mobile
+          sm: "center", // Center on tablet+
+        },
+        gap: {
+          xs: 2, // More gap on mobile
+          sm: 1,
+        },
+        mb: 3,
+        p: {
+          xs: 1,
+          sm: 0,
+        },
+      }}
+    >
+      {/* Navigation Section */}
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 1,
+          order: {
+            xs: 2, // Show after date/view selector on mobile
+            sm: 1, // Show first on tablet+
+          },
+          justifyContent: {
+            xs: "center", // Center on mobile
+            sm: "flex-start",
+          },
+        }}
+      >
+        <Button
+          variant="outlined"
+          size={isMobile ? "small" : "medium"}
+          onClick={() => onNavigate("TODAY")}
+          sx={{
+            minWidth: {
+              xs: "60px",
+              sm: "auto",
+            },
+            fontSize: {
+              xs: "0.7rem",
+              sm: "0.875rem",
+            },
+          }}
         >
-          <span className="label-filter-off">Month</span>
-        </ButtonToggle>
-        <ButtonToggle
-          className="h-8"
-          ontoggle={viewState === "day"}
-          onClick={goToDayView}
+          Hari ini
+        </Button>
+
+        <Box sx={{ display: "flex", gap: 0.5 }}>
+          <Button
+            variant="outlined"
+            size={isMobile ? "small" : "medium"}
+            onClick={() => onNavigate("PREV")}
+            sx={{
+              minWidth: {
+                xs: "40px",
+                sm: "auto",
+              },
+              px: {
+                xs: 1,
+                sm: 2,
+              },
+            }}
+          >
+            <ArrowBack fontSize={isMobile ? "small" : "medium"} />
+          </Button>
+          <Button
+            variant="outlined"
+            size={isMobile ? "small" : "medium"}
+            onClick={() => onNavigate("NEXT")}
+            sx={{
+              minWidth: {
+                xs: "40px",
+                sm: "auto",
+              },
+              px: {
+                xs: 1,
+                sm: 2,
+              },
+            }}
+          >
+            <ArrowForward fontSize={isMobile ? "small" : "medium"} />
+          </Button>
+        </Box>
+      </Box>
+
+      {/* Date Range Display */}
+      <Box
+        sx={{
+          order: {
+            xs: 1, // Show first on mobile
+            sm: 2, // Show in middle on tablet+
+          },
+          textAlign: "center",
+          flex: {
+            xs: "none",
+            sm: 1,
+          },
+        }}
+      >
+        <Typography
+          variant={isMobile ? "h6" : "h5"}
+          component="h2"
+          sx={{
+            fontWeight: 600,
+            color: "primary.main",
+            fontSize: {
+              xs: "1rem",
+              sm: "1.25rem",
+              md: "1.5rem",
+            },
+          }}
         >
-          <span className="label-filter-off">Day</span>
-        </ButtonToggle>
-      </span>
-    </div>
+          {getDateRangeLabel()}
+        </Typography>
+      </Box>
+
+      {/* View Selector */}
+      <Box
+        sx={{
+          order: {
+            xs: 3, // Show last on mobile
+            sm: 3, // Show last on tablet+
+          },
+          display: "flex",
+          justifyContent: {
+            xs: "center",
+            sm: "flex-end",
+          },
+        }}
+      >
+        <ButtonGroup
+          variant="outlined"
+          size={isMobile ? "small" : "medium"}
+          sx={{
+            "& .MuiButton-root": {
+              fontSize: {
+                xs: "0.7rem",
+                sm: "0.875rem",
+              },
+              px: {
+                xs: 1,
+                sm: 2,
+              },
+              minWidth: {
+                xs: "50px",
+                sm: "auto",
+              },
+            },
+          }}
+        >
+          <Button
+            variant={view === "month" ? "contained" : "outlined"}
+            onClick={() => handleViewChange("month")}
+          >
+            {isMobile ? "Bln" : "Bulan"}
+          </Button>
+          <Button
+            variant={view === "week" ? "contained" : "outlined"}
+            onClick={() => handleViewChange("week")}
+          >
+            {isMobile ? "Mgu" : "Minggu"}
+          </Button>
+          <Button
+            variant={view === "day" ? "contained" : "outlined"}
+            onClick={() => handleViewChange("day")}
+          >
+            Hari
+          </Button>
+        </ButtonGroup>
+      </Box>
+    </Box>
   );
-}
+};
+
+export default ToolbarRBCCust;

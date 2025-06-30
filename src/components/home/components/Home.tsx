@@ -3,7 +3,7 @@
 import ConfirmationDialog from "@/common/ConfirmationDialog";
 import axios from "@/lib/axios";
 import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
-import { useAuthStore } from "@/lib/store/auth";
+import { useAuthStore } from "@/lib/store/useAuthStore";
 import {
   Alert,
   Box,
@@ -22,7 +22,6 @@ import DigitalClock from "./DigitalClock";
 
 const Home = () => {
   const user = useAuthStore((state) => state.user);
-  console.log(user, "user");
   const axiosAuth = useAxiosAuth();
   const [counter, setCounter] = useState<number>();
   const [penalty, setPenalty] = useState();
@@ -39,7 +38,6 @@ const Home = () => {
         const res = await axios.patch("/user/penalty", {
           id_user: user?.id_user,
         });
-        console.log(res, "res");
         setCounter(res.data.counter);
       } catch (error: any) {
         if (error?.response && user?.id_user) {

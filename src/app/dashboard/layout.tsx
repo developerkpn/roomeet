@@ -2,7 +2,6 @@
 
 import Wrapper from "@/common/Wrapper";
 import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
-import { Container } from "@mui/material";
 import { SWRConfig } from "swr";
 
 export default function DashboardLayout({
@@ -17,9 +16,7 @@ export default function DashboardLayout({
 
   return (
     <SWRConfig value={swrConfig}>
-      <Container component="section" maxWidth="lg">
-        <Wrapper>{children}</Wrapper>
-      </Container>
+      <Wrapper>{children}</Wrapper>
     </SWRConfig>
   );
 }

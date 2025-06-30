@@ -2,7 +2,9 @@
 
 import WrapperAdmin from "@/common/WrapperAdmin";
 import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
-import { Container } from "@mui/material";
+import { useAuthStore } from "@/lib/store/useAuthStore";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { SWRConfig } from "swr";
 
 export default function AdminLayout({
@@ -14,12 +16,21 @@ export default function AdminLayout({
   const swrConfig = {
     fetcher: (url: any) => axiosAuth?.get(url).then((res) => res.data),
   };
+  const isAdmin = useAuthStore(
+    (state) => state.user?.role_id === "43dba1a3-e595-4f0b-aaa8-9f33b28caf51"
+  );
+  const { user } = useAuthStore();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (user && !isAdmin) {
+      router.push("/dashboard");
+    }
+  }, [user, isAdmin, router]);
 
   return (
     <SWRConfig value={swrConfig}>
-      <Container component="section" maxWidth="lg">
-        <WrapperAdmin>{children}</WrapperAdmin>
-      </Container>
+      <WrapperAdmin>{children}</WrapperAdmin>
     </SWRConfig>
   );
 }

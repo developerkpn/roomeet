@@ -1,9 +1,9 @@
 "use client";
 
-import { Fab, Popover } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
-import { useEffect, useState } from "react";
+import { Box, Fab, Popover } from "@mui/material";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import NavMenu from "./NavMenu";
 
 const NavButton = ({ admin }: any) => {
@@ -25,8 +25,26 @@ const NavButton = ({ admin }: any) => {
   const open = Boolean(anchorEl);
 
   return (
-    <div className="fixed bottom-0 right-0 p-5 ">
-      <Fab color="primary" aria-label="add" onClick={(e) => handleClick(e)}>
+    <Box
+      sx={{
+        position: "fixed",
+        bottom: 16,
+        right: 16,
+        zIndex: 1000,
+        // Ensure it doesn't interfere with scrolling
+        pointerEvents: "auto",
+      }}
+    >
+      <Fab
+        color="primary"
+        aria-label="menu"
+        onClick={handleClick}
+        sx={{
+          // Ensure proper touch target size
+          width: 56,
+          height: 56,
+        }}
+      >
         <MenuIcon />
       </Fab>
       <Popover
@@ -41,10 +59,21 @@ const NavButton = ({ admin }: any) => {
           vertical: "bottom",
           horizontal: "center",
         }}
+        sx={{
+          zIndex: 1301, // Higher than the fab button
+        }}
+        slotProps={{
+          paper: {
+            sx: {
+              maxHeight: "80vh", // Prevent modal from being too tall
+              overflow: "auto",
+            },
+          },
+        }}
       >
         <NavMenu admin={admin} />
       </Popover>
-    </div>
+    </Box>
   );
 };
 

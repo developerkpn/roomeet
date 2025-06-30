@@ -8,7 +8,7 @@ import { CardsBookSkeleton } from "@/common/skeletons/CardSkeleton";
 import { TextFieldComp } from "@/common/TextField";
 import TimePickerComp from "@/common/TimePicker";
 import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
-import { useAuthStore } from "@/lib/store/auth";
+import { useAuthStore } from "@/lib/store/useAuthStore";
 import {
   Alert,
   Box,
@@ -41,7 +41,37 @@ interface DefaultVal {
   minute: number | undefined;
 }
 
-export default function BookFormSingle({ editData }: { editData: any }) {
+interface Room {
+  id_ruangan: string;
+  nama: string;
+  kapasitas: number;
+}
+
+interface BookingData {
+  id_book: string;
+  id_ruangan: string;
+  id_user: string;
+  book_date: string;
+  time_start: string;
+  time_end: string;
+  agenda: string;
+  prtcpt_ctr: number;
+  remark?: string;
+  category: string;
+  approval: string;
+  is_active: string;
+}
+
+interface AvailabilityResponse {
+  message: string;
+  data: Room[];
+}
+
+export default function BookFormSingle({
+  editData,
+}: {
+  editData: BookingData | undefined;
+}) {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const axiosAuth = useAxiosAuth();
@@ -72,11 +102,11 @@ export default function BookFormSingle({ editData }: { editData: any }) {
   const [hour, setHour] = useState<number>(0);
   const [minute, setMinute] = useState<number>(0);
   const [available, setAvailable] = useState(false);
-  const [rooms, setRooms] = useState([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(false);
   const [isEdit, setIsEdit] = useState(!!editData);
   const [changed, setChanged] = useState(true);
-  const [penalty, setPenalty] = useState();
+  const [penalty, setPenalty] = useState<string | undefined>();
 
   useEffect(() => {
     const checkPenalty = async () => {
@@ -87,10 +117,10 @@ export default function BookFormSingle({ editData }: { editData: any }) {
         if (res.data.changed) {
           toast.success(res.data.message);
         }
-      } catch (error: any) {
-        if (error?.response && user?.id_user) {
-          console.error(error);
-          setPenalty(error?.response.data.message);
+      } catch (error) {
+        if (axios.isAxiosError(error)) {
+          const data = error.response?.data as { message: string };
+          setPenalty(data.message);
         } else {
           console.error(error);
         }
@@ -98,38 +128,43 @@ export default function BookFormSingle({ editData }: { editData: any }) {
     };
     checkPenalty();
 
-    if (isEdit) {
+    if (isEdit && editData) {
       form.reset({
         dateBook: moment(editData.book_date).toDate(),
-        startTime: moment(editData.time_start, "hh:mm").toDate(),
-        endTime: moment(editData.time_end, "hh:mm").toDate(),
+        startTime: moment(editData.time_start, "HH:mm").toDate(),
+        endTime: moment(editData.time_end, "HH:mm").toDate(),
         capacity: editData.prtcpt_ctr,
-        ruangan: editData.id_ruangan,
+        ruangan: "",
         agenda: editData.agenda,
-        remark: editData.remark,
-        category: editData.category,
+        remark: editData.remark || "",
+        category: editData.category || "",
       });
 
-      setStartTime(form.getValues("startTime"));
-      setEndTime(form.getValues("endTime"));
+      setStartTime(moment(editData.time_start, "HH:mm").toDate());
+      setEndTime(moment(editData.time_end, "HH:mm").toDate());
 
-      const tempHour = moment(form.getValues("endTime")).diff(
-        moment(form.getValues("startTime")),
+      const tempHour = moment(editData.time_end, "HH:mm").diff(
+        moment(editData.time_start, "HH:mm"),
         "hours"
       );
       const tempMinute =
-        moment(form.getValues("endTime")).diff(
-          moment(form.getValues("startTime")),
+        moment(editData.time_end, "HH:mm").diff(
+          moment(editData.time_start, "HH:mm"),
           "minutes"
         ) % 60;
 
       setHour(tempHour);
       setMinute(tempMinute);
+
+      // For edit mode, don't show rooms initially
+      setAvailable(false);
+      setChanged(true);
     }
     // console.log(form.getValues());
   }, [editData, form, isEdit, axiosAuth, user?.id_user]);
 
   console.log("edit data", editData);
+  console.log("isEdit", isEdit);
   console.log("formatted edit", form.getValues());
 
   const settings = {
@@ -163,7 +198,9 @@ export default function BookFormSingle({ editData }: { editData: any }) {
     try {
       const res = !isEdit
         ? await axiosAuth.post("/book", { data: payload })
-        : await axiosAuth.patch(`/book/${editData.id_book}`, { data: payload });
+        : await axiosAuth.patch(`/book/${editData?.id_book}`, {
+            data: payload,
+          });
       toast.success("Don't forget to check in on the starting time!");
       router.replace(`/dashboard/book/success/${res.data.id_ticket}`);
     } catch (error) {
@@ -205,7 +242,7 @@ export default function BookFormSingle({ editData }: { editData: any }) {
         time_end: format(values.endTime as Date, "HH:mm"),
         participant: values.capacity,
         category: values.category,
-        id_book: editData?.id_book,
+        id_book: editData?.id_book || "",
       };
       console.log(payload);
 
@@ -221,6 +258,19 @@ export default function BookFormSingle({ editData }: { editData: any }) {
           const tempRooms = res.data.data;
           setRooms(tempRooms);
           console.log(tempRooms);
+
+          // In edit mode, automatically select the current room if available
+          if (isEdit && editData && editData.id_ruangan) {
+            const currentRoom = tempRooms.find(
+              (room: Room) => room.id_ruangan === editData.id_ruangan
+            );
+            if (currentRoom) {
+              setRoomid(editData.id_ruangan);
+              form.setValue("ruangan", editData.id_ruangan);
+              form.clearErrors("ruangan");
+              console.log("Auto-selected current room:", editData.id_ruangan);
+            }
+          }
         }
       } catch (error) {
         const errors = error as AxiosError;
@@ -444,7 +494,30 @@ export default function BookFormSingle({ editData }: { editData: any }) {
                   py: 24,
                 }}
               >
-                <Typography>Rooms:</Typography>
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <Typography>Rooms:</Typography>
+                  {isEdit && (
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={() => {
+                        setAvailable(false);
+                        setChanged(true);
+                        setRoomid("");
+                        form.setValue("ruangan", "");
+                      }}
+                      sx={{ mb: 1 }}
+                    >
+                      ← Back to Form
+                    </Button>
+                  )}
+                </Box>
                 <Suspense fallback={<CardsBookSkeleton />}>
                   <CardRooms
                     selectedId={roomId}
@@ -479,9 +552,13 @@ export default function BookFormSingle({ editData }: { editData: any }) {
                 ) : (
                   <>
                     <ConfirmationDialog
-                      title="Submit Book"
-                      desc="Are you sure you want to submit?"
-                      action="Submit"
+                      title={isEdit ? "Update Booking" : "Submit Book"}
+                      desc={
+                        isEdit
+                          ? "Are you sure you want to update this booking?"
+                          : "Are you sure you want to submit?"
+                      }
+                      action={isEdit ? "Update" : "Submit"}
                       response={handleSubmit(onSubmit)}
                       type="submit"
                     >
@@ -496,7 +573,11 @@ export default function BookFormSingle({ editData }: { editData: any }) {
                           variant="contained"
                           disabled={changed}
                         >
-                          {changed ? "Please check room" : "Submit"}
+                          {changed
+                            ? "Please check room"
+                            : isEdit
+                            ? "Update Booking"
+                            : "Submit"}
                         </Button>
                       )}
                     </ConfirmationDialog>
