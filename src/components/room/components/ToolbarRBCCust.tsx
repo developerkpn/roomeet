@@ -56,8 +56,6 @@ const ToolbarRBCCust: React.FC<ToolbarProps> = ({
             { locale: id }
           )}`;
         }
-      case "day":
-        return format(date, "EEEE, d MMMM yyyy", { locale: id });
       default:
         return format(date, "MMMM yyyy", { locale: id });
     }
@@ -240,12 +238,6 @@ const ToolbarRBCCust: React.FC<ToolbarProps> = ({
             onClick={() => handleViewChange("week")}
           >
             {isMobile ? "Mgu" : "Minggu"}
-          </Button>
-          <Button
-            variant={view === "day" ? "contained" : "outlined"}
-            onClick={() => handleViewChange("day")}
-          >
-            Hari
           </Button>
         </ButtonGroup>
       </Box>

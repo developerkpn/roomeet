@@ -28,7 +28,6 @@ export default function BigCalendar({ events }: { events?: any }) {
     () => ({
       views: {
         month: true,
-        day: true,
         week: true,
       },
       defaultDate: new Date(),
@@ -223,14 +222,10 @@ export default function BigCalendar({ events }: { events?: any }) {
             },
           },
         },
-        // Responsive event styling
+        // Responsive event styling (base styles)
         "& .rbc-event": {
           borderRadius: "0 !important",
           border: "none !important",
-          left: "0 !important",
-          right: "0 !important",
-          transform: "none !important",
-          width: "100% !important",
           fontSize: {
             xs: "0.6rem", // Mobile: very small text
             sm: "0.7rem", // Tablet: small text
@@ -256,6 +251,22 @@ export default function BigCalendar({ events }: { events?: any }) {
             cursor: "pointer",
             transition: isMobile ? "none" : "all 0.2s ease-in-out",
           },
+        },
+        // Month view events should take full width
+        "& .rbc-month-view .rbc-event": {
+          width: "100% !important",
+          left: "0 !important",
+          right: "0 !important",
+          transform: "none !important",
+        },
+        // Today highlighting - different behavior per view
+        // Month view: keep the gray background for today's date
+        "& .rbc-month-view .rbc-today": {
+          backgroundColor: "rgba(0,0,0,0.05) !important",
+        },
+        // Week view: keep subtle highlighting for today's column
+        "& .rbc-week-view .rbc-today": {
+          backgroundColor: "rgba(0,0,0,0.03) !important",
         },
         // Mobile-specific adjustments for containers
         "& .rbc-day-slot, & .rbc-time-column": {
@@ -284,17 +295,16 @@ export default function BigCalendar({ events }: { events?: any }) {
             sm: 3,
           },
         },
-        // Force full width for events in time slots
+        // Event content styling
         "& .rbc-event-content": {
-          width: "100% !important",
           overflow: "hidden !important",
           textOverflow: "ellipsis !important",
           whiteSpace: "nowrap !important",
           padding: "0 !important",
           margin: "0 !important",
         },
-        // Ensure events in day and week view take full width
-        "& .rbc-time-view .rbc-event": {
+        // Week view: events should take full column width
+        "& .rbc-week-view .rbc-time-view .rbc-event": {
           width: "100% !important",
           left: "0 !important",
           right: "0 !important",
@@ -303,28 +313,21 @@ export default function BigCalendar({ events }: { events?: any }) {
           borderRadius: "0 !important",
           transform: "none !important",
         },
-        // Target specific event positioning
-        "& .rbc-day-slot .rbc-event": {
+        // Week view day slots
+        "& .rbc-week-view .rbc-day-slot .rbc-event": {
           width: "100% !important",
           left: "0 !important",
           right: "0 !important",
           margin: "0 !important",
           borderRadius: "0 !important",
         },
-        // Override any default positioning styles
+
+        // Month view and all-day events
         "& .rbc-event-allday": {
           width: "100% !important",
           left: "0 !important",
           right: "0 !important",
           borderRadius: "0 !important",
-        },
-        // Remove any transforms or positioning that might affect width
-        "& .rbc-addons-dnd-resizable": {
-          width: "100% !important",
-        },
-        // Force event wrapper to full width
-        "& .rbc-event-label": {
-          width: "100% !important",
         },
         // Remove excessive borders in day view and fix containers
         "& .rbc-day-slot": {
