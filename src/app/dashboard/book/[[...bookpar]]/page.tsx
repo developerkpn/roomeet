@@ -16,6 +16,8 @@ const BookPage = ({ params }: { params: { bookpar: string[] } }) => {
         try {
           console.log("Fetching edit data for:", params.bookpar[1]);
           const get = await axiosAuth.get(`/book/${params.bookpar[1]}`);
+
+          console.log(get, "get");
           console.log("Edit data fetched:", get.data);
           setEditData(get.data);
         } catch (error) {

@@ -22,6 +22,7 @@ import {
 import axios, { AxiosError } from "axios";
 import { format } from "date-fns";
 import moment from "moment";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -32,7 +33,7 @@ interface DefaultVal {
   dateBook: Date;
   startTime: Date | null | undefined;
   endTime: Date | null | undefined;
-  capacity: number;
+  capacity: string;
   ruangan: string;
   agenda: string;
   remark: string;
@@ -60,6 +61,10 @@ interface BookingData {
   category: string;
   approval: string;
   is_active: string;
+  nama_ruangan: string;
+  image: string;
+  lokasi: string;
+  kapasitas: number;
 }
 
 interface AvailabilityResponse {
@@ -81,7 +86,7 @@ export default function BookFormSingle({
       dateBook: new Date(),
       startTime: null,
       endTime: null,
-      capacity: 0,
+      capacity: "",
       ruangan: "",
       agenda: "",
       remark: "",
@@ -133,7 +138,7 @@ export default function BookFormSingle({
         dateBook: moment(editData.book_date).toDate(),
         startTime: moment(editData.time_start, "HH:mm").toDate(),
         endTime: moment(editData.time_end, "HH:mm").toDate(),
-        capacity: editData.prtcpt_ctr,
+        capacity: editData.prtcpt_ctr.toString(),
         ruangan: "",
         agenda: editData.agenda,
         remark: editData.remark || "",
@@ -167,14 +172,6 @@ export default function BookFormSingle({
   console.log("isEdit", isEdit);
   console.log("formatted edit", form.getValues());
 
-  const settings = {
-    speed: 500,
-    slidesToShow: 1,
-    slidesToScroll: 1,
-    arrows: false,
-    variableWidth: true,
-  };
-
   const selectRoom = (idRoom: string) => {
     setRoomid(idRoom);
     setValue("ruangan", idRoom);
@@ -190,7 +187,7 @@ export default function BookFormSingle({
       time_start: format(values.startTime as Date, "HH:mm"),
       time_end: format(values.endTime as Date, "HH:mm"),
       agenda: values.agenda,
-      participant: values.capacity,
+      participant: Number(values.capacity) || 0,
       category: values.category,
       remark: values.remark,
     };
@@ -240,7 +237,7 @@ export default function BookFormSingle({
         book_date: format(values.dateBook as Date, "Y-L-d"),
         time_start: format(values.startTime as Date, "HH:mm"),
         time_end: format(values.endTime as Date, "HH:mm"),
-        participant: values.capacity,
+        participant: Number(values.capacity) || 0,
         category: values.category,
         id_book: editData?.id_book || "",
       };
@@ -443,12 +440,26 @@ export default function BookFormSingle({
                   control={form.control}
                   name="capacity"
                   label="Capacity"
-                  type="number"
-                  min={0}
+                  type="string"
+                  min={1}
                   max={100}
                   rules={{
                     required: "Insert capacity",
-                    min: { value: 1, message: "Minimum value 1" },
+                    validate: {
+                      minValue: (value: string) => {
+                        const num = Number(value);
+                        return num >= 1 || "Minimum value 1";
+                      },
+                      maxValue: (value: string) => {
+                        const num = Number(value);
+                        return num <= 100 || "Maximum value 100";
+                      },
+                      isNumber: (value: string) => {
+                        return (
+                          !isNaN(Number(value)) || "Must be a valid number"
+                        );
+                      },
+                    },
                   }}
                   onChangeOvr={() => setChanged(true)}
                 />
@@ -585,11 +596,117 @@ export default function BookFormSingle({
                 )}
               </Box>
             ) : (
-              <Typography
-                sx={{ py: 24, color: "grey.500", textAlign: "center" }}
-              >
-                Please check available room first
-              </Typography>
+              <Box sx={{ py: 24 }}>
+                {isEdit && editData && editData.nama_ruangan ? (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 2,
+                    }}
+                  >
+                    <Typography
+                      variant="h6"
+                      sx={{ color: "primary.main", mb: 2 }}
+                    >
+                      Currently Booked Room
+                    </Typography>
+                    <Box
+                      sx={{
+                        border: 2,
+                        borderColor: "primary.main",
+                        borderRadius: 3,
+                        overflow: "hidden",
+                        boxShadow: 3,
+                      }}
+                    >
+                      {/* Room Image */}
+                      {editData.image && (
+                        <Box
+                          sx={{
+                            position: "relative",
+                            width: "100%",
+                            height: 200,
+                          }}
+                        >
+                          <Image
+                            src={editData.image}
+                            alt={editData.nama_ruangan}
+                            fill
+                            style={{
+                              objectFit: "cover",
+                            }}
+                          />
+                        </Box>
+                      )}
+
+                      {/* Room Details */}
+                      <Box sx={{ p: 3, mt: 5 }}>
+                        <Typography
+                          variant="h4"
+                          sx={{
+                            fontWeight: "bold",
+                            mb: 2,
+                            color: "primary.main",
+                          }}
+                        >
+                          {editData.nama_ruangan}
+                        </Typography>
+
+                        <Box
+                          sx={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 1,
+                            mb: 2,
+                          }}
+                        >
+                          <Typography
+                            variant="body1"
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                            }}
+                          >
+                            <span>📍 Location: {editData.lokasi}</span>
+                          </Typography>
+                          <Typography
+                            variant="body1"
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                            }}
+                          >
+                            <span>
+                              👥 Capacity: {editData.kapasitas} people
+                            </span>
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Box>
+
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: "grey.300",
+                        fontStyle: "italic",
+                        mt: 2,
+                        textAlign: "center",
+                      }}
+                    >
+                      This is your currently booked room. Click &quot;Check
+                      Available Room&quot; below to see other options if you
+                      want to change your room.
+                    </Typography>
+                  </Box>
+                ) : (
+                  <Typography sx={{ color: "grey.500", textAlign: "center" }}>
+                    Please check available room first
+                  </Typography>
+                )}
+              </Box>
             )}
           </Grid>
         </Grid>

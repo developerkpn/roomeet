@@ -1,9 +1,10 @@
 "use client";
 
 import ConfirmationDialog from "@/common/ConfirmationDialog";
-import axios from "@/lib/axios";
+import QRScanner from "@/common/QRScanner";
 import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
 import { useAuthStore } from "@/lib/store/useAuthStore";
+import { QrCodeScanner } from "@mui/icons-material";
 import {
   Alert,
   Box,
@@ -35,9 +36,11 @@ const Home = () => {
 
     const checkPenalty = async () => {
       try {
-        const res = await axios.patch("/user/penalty", {
+        const res = await axiosAuth.patch("/user/penalty", {
           id_user: user?.id_user,
         });
+        console.log(user, "user from home");
+        console.log(res.data, "res.data check penalty");
         setCounter(res.data.counter);
       } catch (error: any) {
         if (error?.response && user?.id_user) {
@@ -50,7 +53,8 @@ const Home = () => {
       }
     };
     checkPenalty();
-  }, [user?.id_user, axiosAuth]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id_user]);
 
   const ciUrl = `/book/checkin/${user?.id_user}`;
   const coUrl = `/book/checkout/${user?.id_user}`;
@@ -70,7 +74,7 @@ const Home = () => {
 
   const handleCheckIn = async (id_user: any, id_book: any) => {
     try {
-      const res = await axios.patch("/book/checkin", {
+      const res = await axiosAuth.patch("/book/checkin", {
         data: {
           id_user: id_user,
           id_book: id_book,
@@ -86,7 +90,7 @@ const Home = () => {
 
   const handleCheckOut = async (id_user: any, id_book: any) => {
     try {
-      const res = await axios.patch("/book/checkout", {
+      const res = await axiosAuth.patch("/book/checkout", {
         data: {
           id_user: id_user,
           id_book: id_book,
@@ -96,6 +100,46 @@ const Home = () => {
       toast.success(res.data.message);
     } catch (error) {
       toast.error("Error");
+    }
+  };
+
+  // QR-based check-in/check-out handlers
+  const handleQRCheckIn = async (room_id: string) => {
+    if (!user?.id_user) {
+      toast.error("User not authenticated");
+      return;
+    }
+
+    try {
+      const res = await axiosAuth.patch("/book/checkin", {
+        id_user: user.id_user,
+        room_id: room_id,
+      });
+      ciMutate();
+      coMutate();
+      bookMutate();
+      toast.success(res.data.message);
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Check-in failed");
+    }
+  };
+
+  const handleQRCheckOut = async (room_id: string) => {
+    if (!user?.id_user) {
+      toast.error("User not authenticated");
+      return;
+    }
+
+    try {
+      const res = await axiosAuth.patch("/book/checkout", {
+        id_user: user.id_user,
+        room_id: room_id,
+      });
+      coMutate();
+      bookMutate();
+      toast.success(res.data.message);
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Check-out failed");
     }
   };
 
@@ -129,6 +173,28 @@ const Home = () => {
         <Typography sx={{ fontWeight: "bold", mb: 16, color: "primary.light" }}>
           Check In
         </Typography>
+
+        {/* QR Scanner Check-in Button */}
+        <Box sx={{ mb: 2 }}>
+          <QRScanner
+            onScan={handleQRCheckIn}
+            title="Check In with QR Code"
+            actionText="Check In"
+          >
+            {(showScanner) => (
+              <Button
+                variant="outlined"
+                startIcon={<QrCodeScanner />}
+                onClick={showScanner}
+                fullWidth
+                sx={{ mb: 2 }}
+              >
+                Scan QR to Check In
+              </Button>
+            )}
+          </QRScanner>
+        </Box>
+
         {checkin ? (
           checkin?.data.length !== 0 ? (
             <Grid container spacing={16}>
@@ -193,6 +259,29 @@ const Home = () => {
         <Typography sx={{ fontWeight: "bold", my: 16, color: "primary.light" }}>
           Check Out
         </Typography>
+
+        {/* QR Scanner Check-out Button */}
+        <Box sx={{ mb: 2 }}>
+          <QRScanner
+            onScan={handleQRCheckOut}
+            title="Check Out with QR Code"
+            actionText="Check Out"
+          >
+            {(showScanner) => (
+              <Button
+                variant="outlined"
+                startIcon={<QrCodeScanner />}
+                onClick={showScanner}
+                fullWidth
+                sx={{ mb: 2 }}
+                color="error"
+              >
+                Scan QR to Check Out
+              </Button>
+            )}
+          </QRScanner>
+        </Box>
+
         {checkout ? (
           checkout?.data.length !== 0 ? (
             <Grid container spacing={16}>

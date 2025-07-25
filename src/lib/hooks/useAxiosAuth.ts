@@ -27,29 +27,24 @@ const useAxiosAuth = () => {
       (response) => response,
       async (error) => {
         const prevRequest = error?.config;
+
         if (
           (error?.response?.status === 401 ||
             error?.response?.status === 403) &&
-          !prevRequest?._retry
+          !prevRequest?.sent
         ) {
-          prevRequest._retry = true;
+          prevRequest.sent = true; // Use 'sent' flag like working code
           try {
-            await refreshToken();
-            // Get the new access token from Zustand
-            const newAccessToken = useAuthStore.getState().accessToken;
+            const newAccessToken = await refreshToken(); // Get token directly
             if (newAccessToken) {
               prevRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
               return axios(prevRequest);
             } else {
-              // No new token received, clear auth and redirect
-              clearAuth();
-              router.replace("/login");
+              // No new token received, let refresh handle redirect
               return Promise.reject(new Error("No access token after refresh"));
             }
           } catch (refreshError) {
-            // Refresh failed, clear auth and redirect
-            clearAuth();
-            router.replace("/login");
+            // Refresh failed, let refresh handle redirect  
             return Promise.reject(refreshError);
           }
         }

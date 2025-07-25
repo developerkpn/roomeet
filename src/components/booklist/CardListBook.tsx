@@ -1,12 +1,16 @@
 "use client";
 
+import ConfirmationDialog from "@/common/ConfirmationDialog";
 import { CardsListBookSkeleton } from "@/common/skeletons/CardSkeleton";
+import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
 import { useAuthStore } from "@/lib/store/useAuthStore";
+import CancelIcon from "@mui/icons-material/Cancel";
 import EditIcon from "@mui/icons-material/Edit";
 import { Box, Grid, IconButton, Typography } from "@mui/material";
 import moment from "moment";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import useSWR from "swr";
 
 interface CardListBookProp {
@@ -53,6 +57,8 @@ function CardListBook({
   mutate,
 }: CardListBookProp) {
   const [actions, setActions] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const axiosAuth = useAxiosAuth();
 
   useEffect(() => {
     const time = moment(`${bookDate} ${startTime}`, "YYYY-MM-DD HH:mm");
@@ -64,6 +70,20 @@ function CardListBook({
 
     checkTime();
   }, [bookDate, startTime]);
+
+  const handleCancelBooking = async () => {
+    setCancelling(true);
+    try {
+      await axiosAuth.delete(`/book/${id_book}`);
+      toast.success("Booking cancelled successfully");
+      mutate(); // Refresh the booking list
+    } catch (error) {
+      console.error("Failed to cancel booking:", error);
+      toast.error("Failed to cancel booking. Please try again.");
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   return (
     <Grid item xs={12} sm={6}>
@@ -121,19 +141,47 @@ function CardListBook({
             {(approval === "pending" || approval === "approved") &&
               is_active === "T" &&
               actions && (
-                <Link href={`/dashboard/book/${id_room}/${id_book}`}>
-                  <IconButton
-                    sx={{
-                      bgcolor: "secondary.main",
-                      color: "#202020",
-                      "&:hover": {
-                        bgcolor: "secondary.light",
-                      },
-                    }}
+                <Box sx={{ display: "flex", flexDirection: "row", gap: 10 }}>
+                  <Link href={`/dashboard/book/${id_room}/${id_book}`}>
+                    <IconButton
+                      sx={{
+                        bgcolor: "secondary.main",
+                        color: "#202020",
+                        "&:hover": {
+                          bgcolor: "secondary.light",
+                        },
+                      }}
+                    >
+                      <EditIcon />
+                    </IconButton>
+                  </Link>
+                  <ConfirmationDialog
+                    title="Cancel Booking"
+                    desc={`Are you sure you want to cancel "${agendaTitle}"? This action cannot be undone.`}
+                    action="Cancel Booking"
+                    response={handleCancelBooking}
                   >
-                    <EditIcon />
-                  </IconButton>
-                </Link>
+                    {(showDialog: any) => (
+                      <IconButton
+                        onClick={showDialog}
+                        disabled={cancelling}
+                        sx={{
+                          bgcolor: "error.main",
+                          color: "white",
+                          "&:hover": {
+                            bgcolor: "error.dark",
+                          },
+                          "&:disabled": {
+                            bgcolor: "grey.400",
+                            color: "grey.600",
+                          },
+                        }}
+                      >
+                        <CancelIcon />
+                      </IconButton>
+                    )}
+                  </ConfirmationDialog>
+                </Box>
               )}
           </Grid>
         </Grid>

@@ -18,7 +18,13 @@ const localizer = dateFnsLocalizer({
   locales,
 });
 
-export default function BigCalendar({ events }: { events?: any }) {
+export default function BigCalendar({
+  events,
+  refreshBookings,
+}: {
+  events?: any;
+  refreshBookings?: () => void;
+}) {
   const [date, setDate] = useState<Date>(new Date());
   const [view, setView] = useState(Views.MONTH);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
@@ -459,6 +465,7 @@ export default function BigCalendar({ events }: { events?: any }) {
         onClose={handleCloseModal}
         isMobile={isMobile}
         isTablet={isTablet}
+        refreshBookings={refreshBookings}
       />
     </Box>
   );

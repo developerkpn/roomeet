@@ -25,9 +25,11 @@ import useSWR from "swr";
 const AdminPage = () => {
   const user = useAuthStore((state) => state.user);
   const [date, setDate] = useState<any>("");
-  const [status, setStatus] = useState<any>("");
+  const [status, setStatus] = useState<any>("all");
   const [dateVal, setDateVal] = useState<any>(null);
-  const url = `/book?book_date=${date}&approval=${status}`;
+  const url = `/book?book_date=${date}&approval=${
+    status === "all" ? "" : status
+  }`;
   const { data: books } = useSWR(user && url, {
     fallback: { url: [] },
   });
@@ -36,13 +38,11 @@ const AdminPage = () => {
     const d = moment(value).format("YYYY-MM-DD");
     setDateVal(value);
     setDate(d);
-    console.log(d);
   };
 
   const handleStatus = (e: SelectChangeEvent<any>) => {
     const s = e.target.value;
     setStatus(s);
-    console.log(s);
   };
 
   return (
@@ -81,12 +81,12 @@ const AdminPage = () => {
           <FormControl fullWidth>
             <InputLabel>Approval Status</InputLabel>
             <Select
-              defaultValue=""
+              defaultValue="all"
               value={status}
               label="Approval"
               onChange={handleStatus}
             >
-              <MenuItem value="">---</MenuItem>
+              <MenuItem value="all">All</MenuItem>
               <MenuItem value="pending">Pending</MenuItem>
               <MenuItem value="approved">Approved</MenuItem>
               <MenuItem value="rejected">Rejected</MenuItem>

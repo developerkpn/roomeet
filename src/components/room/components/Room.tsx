@@ -18,14 +18,16 @@ import {
   useTheme,
 } from "@mui/material";
 import Image from "next/image";
+import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import useSWR from "swr";
+import useSWR, { mutate } from "swr";
 import BigCalendar from "./BigCalendar";
 
 const Room = () => {
-  const [room, setRoom] = useState("");
-  const [events, setEvents] = useState();
+  const { idroom } = useParams();
   const [rooms, setRooms] = useState<any>();
+  const [room, setRoom] = useState<any>(idroom ? idroom[0] : "");
+  const [events, setEvents] = useState<any>();
   const axiosAuth = useAxiosAuth();
   const [deleteDialog, setDeleteDialog] = useState(false);
 
@@ -48,6 +50,13 @@ const Room = () => {
   const { data: roomDetails, loading } = useFetch<any>(
     room ? `/room/fas?id_room=${room}` : ""
   );
+
+  // Function to refresh booking data
+  const refreshBookings = () => {
+    if (url) {
+      mutate(url);
+    }
+  };
 
   useEffect(() => {
     const getRooms = async () => {
@@ -434,7 +443,7 @@ const Room = () => {
               </Button>
             </DialogActions>
           </Dialog>
-          <BigCalendar events={events} />
+          <BigCalendar events={events} refreshBookings={refreshBookings} />
         </>
       ) : (
         <Typography

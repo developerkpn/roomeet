@@ -1,10 +1,8 @@
 import { Badge, Box, Button, Typography } from "@mui/material";
 import { CheckBadgeIcon } from "@heroicons/react/24/outline";
-import { createRef } from "react";
 import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
 import PlaceIcon from "@mui/icons-material/Place";
 import useSWR from "swr";
-import Slider from "react-slick";
 import { CardsBookSkeleton } from "@/common/skeletons/CardSkeleton";
 import Image from "next/image";
 
@@ -34,14 +32,6 @@ interface CardProp {
   error: boolean;
 }
 
-const settings = {
-  speed: 500,
-  slidesToShow: 2.1,
-  slidesToScroll: 1,
-  arrows: false,
-  variableWidth: false,
-  infinite: false,
-};
 
 export const CardRoom = ({ roomInfo, selectedId, clickCard, error }: CardProp) => {
   function onClickCard(id: string) {
@@ -174,9 +164,46 @@ export const CardRooms = ({
   return (
     <>
       {!isLoading && (
-        <Slider {...settings}>
+        <Box
+          sx={{
+            display: "flex",
+            overflowX: "auto",
+            gap: 2,
+            py: 2,
+            px: 1,
+            // Enable smooth scrolling
+            scrollBehavior: "smooth",
+            // Hide scrollbar on webkit browsers (Safari, Chrome)
+            "&::-webkit-scrollbar": {
+              height: 8,
+            },
+            "&::-webkit-scrollbar-track": {
+              backgroundColor: "grey.200",
+              borderRadius: 1,
+            },
+            "&::-webkit-scrollbar-thumb": {
+              backgroundColor: "grey.400",
+              borderRadius: 1,
+              "&:hover": {
+                backgroundColor: "grey.500",
+              },
+            },
+            // For Firefox
+            scrollbarWidth: "thin",
+            scrollbarColor: "rgba(0,0,0,0.3) rgba(0,0,0,0.1)",
+          }}
+        >
           {roomData?.map((item) => (
-            <Box key={item.id} sx={{ pt: 18, pb: 32, pr: 16 }}>
+            <Box 
+              key={item.id} 
+              sx={{ 
+                minWidth: "300px", // Fixed width to ensure cards don't shrink
+                maxWidth: "300px",
+                pt: 18, 
+                pb: 32, 
+                pr: 16 
+              }}
+            >
               <CardRoom
                 roomInfo={item}
                 selectedId={selectedId}
@@ -185,7 +212,7 @@ export const CardRooms = ({
               />
             </Box>
           ))}
-        </Slider>
+        </Box>
       )}
       {isLoading && <CardsBookSkeleton />}
     </>

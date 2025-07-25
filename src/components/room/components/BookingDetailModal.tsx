@@ -1,3 +1,7 @@
+"use client";
+
+import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
+import { useAuthStore } from "@/lib/store/useAuthStore";
 import { Close } from "@mui/icons-material";
 import {
   Box,
@@ -8,18 +12,21 @@ import {
   DialogTitle,
   Grid,
   IconButton,
+  TextField,
   Typography,
   useMediaQuery,
   useTheme,
 } from "@mui/material";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
-import React from "react";
+import React, { useState } from "react";
 
 interface BookingDetailModalProps {
   event: any;
   open: boolean;
   onClose: () => void;
+  onBookingCancelled?: () => void; // Callback to refresh data after cancellation
+  refreshBookings?: () => void; // Alternative refresh callback
   isMobile?: boolean;
   isTablet?: boolean;
 }
@@ -28,14 +35,32 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
   event,
   open,
   onClose,
+  onBookingCancelled,
+  refreshBookings,
   isMobile = false,
   isTablet = false,
 }) => {
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down("sm"));
+  const axiosAuth = useAxiosAuth();
+  const user = useAuthStore((state) => state.user);
+
+  // Cancel booking states
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelling, setCancelling] = useState(false);
 
   if (!event) return null;
   console.log(event, "event");
+
+  const isAdmin =
+    user?.role_id === "43dba1a3-e595-4f0b-aaa8-9f33b28caf51" ||
+    user?.role_id === "43dba1a3-e595-4f0b-aaa8-9f33b28caf51";
+
+  // Check if booking can be cancelled (only active bookings)
+  const canCancel =
+    event.resource?.approval === "approved" ||
+    event.resource?.approval === "pending";
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -59,6 +84,41 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
     return format(date, "EEEE, d MMMM yyyy", { locale: id });
   };
 
+  const handleCancelBooking = async () => {
+    if (!event.resource?.id) return;
+
+    setCancelling(true);
+    try {
+      await axiosAuth.patch(`/book/cancel/${event.resource.id}`, {
+        cancel_reason: cancelReason || "Cancelled by admin",
+      });
+
+      setCancelDialogOpen(false);
+      setCancelReason("");
+      onClose();
+
+      // Call refresh callback to reload data
+      if (refreshBookings) {
+        refreshBookings();
+      } else if (onBookingCancelled) {
+        onBookingCancelled();
+      }
+
+      // You might want to show a success message here
+      console.log("Booking cancelled successfully");
+    } catch (error) {
+      console.error("Error cancelling booking:", error);
+      // You might want to show an error message here
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  const handleCancelDialogClose = () => {
+    setCancelDialogOpen(false);
+    setCancelReason("");
+  };
+
   return (
     <Dialog
       open={open}
@@ -72,6 +132,10 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
           maxHeight: fullScreen ? "100%" : "90vh",
           margin: fullScreen ? 0 : 2,
           width: fullScreen ? "100%" : "auto",
+          bgcolor: "rgba(18, 18, 18, 0.95)",
+          color: "text.primary",
+          backdropFilter: "blur(10px)",
+          border: "1px solid rgba(255, 255, 255, 0.1)",
         },
       }}
     >
@@ -80,9 +144,10 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          pb: 1,
+          pb: 2,
           borderBottom: 1,
-          borderColor: "divider",
+          borderColor: "rgba(255, 255, 255, 0.1)",
+          bgcolor: "rgba(255, 255, 255, 0.05)",
           fontSize: {
             xs: "1.1rem",
             sm: "1.25rem",
@@ -98,6 +163,7 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
             textOverflow: "ellipsis",
             whiteSpace: isMobile ? "nowrap" : "normal",
             pr: 1,
+            color: "white",
           }}
         >
           Detail Booking
@@ -124,7 +190,7 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
           overflow: "auto",
         }}
       >
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
           {/* Event Details Grid */}
           <Grid container spacing={isMobile ? 2 : 3}>
             {/* Meeting Title */}
@@ -140,6 +206,7 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
                       xs: "0.875rem",
                       sm: "1rem",
                     },
+                    color: "white",
                   }}
                 >
                   Meeting Title:
@@ -147,17 +214,20 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
                 <Typography
                   variant="body1"
                   sx={{
-                    backgroundColor: "grey.100",
+                    backgroundColor: "rgba(255, 255, 255, 0.08)",
+                    border: "1px solid rgba(255, 255, 255, 0.15)",
                     p: {
-                      xs: 1,
-                      sm: 1.5,
+                      xs: 1.5,
+                      sm: 2,
                     },
-                    borderRadius: 1,
+                    borderRadius: 2,
                     fontSize: {
                       xs: "0.875rem",
                       sm: "1rem",
                     },
                     wordBreak: "break-word",
+                    color: "primary.light",
+                    fontWeight: 500,
                   }}
                 >
                   {getCleanAgenda(event.title)}
@@ -177,6 +247,7 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
                       xs: "0.875rem",
                       sm: "1rem",
                     },
+                    color: "white",
                   }}
                 >
                   Tanggal:
@@ -188,6 +259,7 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
                       xs: "0.8rem",
                       sm: "0.875rem",
                     },
+                    color: "rgba(255, 255, 255, 0.9)",
                   }}
                 >
                   {formatDateTime(event.start)}
@@ -206,6 +278,7 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
                       xs: "0.875rem",
                       sm: "1rem",
                     },
+                    color: "white",
                   }}
                 >
                   Waktu:
@@ -217,6 +290,7 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
                       xs: "0.8rem",
                       sm: "0.875rem",
                     },
+                    color: "rgba(255, 255, 255, 0.9)",
                   }}
                 >
                   {event.resource.timeStart} - {event.resource.timeEnd}
@@ -236,6 +310,7 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
                       xs: "0.875rem",
                       sm: "1rem",
                     },
+                    color: "white",
                   }}
                 >
                   Penyelenggara:
@@ -247,6 +322,7 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
                       xs: "0.8rem",
                       sm: "0.875rem",
                     },
+                    color: "rgba(255, 255, 255, 0.9)",
                   }}
                 >
                   {event.resource.user}
@@ -265,6 +341,7 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
                       xs: "0.875rem",
                       sm: "1rem",
                     },
+                    color: "white",
                   }}
                 >
                   Jumlah Peserta:
@@ -276,6 +353,7 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
                       xs: "0.8rem",
                       sm: "0.875rem",
                     },
+                    color: "rgba(255, 255, 255, 0.9)",
                   }}
                 >
                   {event.resource.participants} orang
@@ -295,6 +373,7 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
                       xs: "0.875rem",
                       sm: "1rem",
                     },
+                    color: "white",
                   }}
                 >
                   Ruangan:
@@ -306,6 +385,7 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
                       xs: "0.8rem",
                       sm: "0.875rem",
                     },
+                    color: "rgba(255, 255, 255, 0.9)",
                   }}
                 >
                   {event.resource.roomId}
@@ -324,6 +404,7 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
                       xs: "0.875rem",
                       sm: "1rem",
                     },
+                    color: "white",
                   }}
                 >
                   Kategori:
@@ -335,6 +416,7 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
                       xs: "0.8rem",
                       sm: "0.875rem",
                     },
+                    color: "rgba(255, 255, 255, 0.9)",
                   }}
                 >
                   {event.resource.category}
@@ -355,6 +437,7 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
                         xs: "0.875rem",
                         sm: "1rem",
                       },
+                      color: "white",
                     }}
                   >
                     Catatan:
@@ -362,12 +445,13 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
                   <Typography
                     variant="body2"
                     sx={{
-                      backgroundColor: "grey.50",
+                      backgroundColor: "rgba(255, 255, 255, 0.05)",
+                      border: "1px solid rgba(255, 255, 255, 0.1)",
                       p: {
-                        xs: 1,
-                        sm: 1.5,
+                        xs: 1.5,
+                        sm: 2,
                       },
-                      borderRadius: 1,
+                      borderRadius: 2,
                       fontSize: {
                         xs: "0.8rem",
                         sm: "0.875rem",
@@ -379,8 +463,8 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
                           : "normal",
                       color:
                         event.resource.remark === "No remarks"
-                          ? "text.secondary"
-                          : "text.primary",
+                          ? "rgba(255, 255, 255, 0.5)"
+                          : "rgba(255, 255, 255, 0.8)",
                     }}
                   >
                     {event.resource.remark}
@@ -403,14 +487,35 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
             sm: 2,
           },
           borderTop: 1,
-          borderColor: "divider",
+          borderColor: "rgba(255, 255, 255, 0.1)",
+          bgcolor: "rgba(255, 255, 255, 0.03)",
+          gap: 1,
         }}
       >
+        {/* Show cancel button only for admins and cancellable bookings */}
+        {isAdmin && canCancel && (
+          <Button
+            onClick={() => setCancelDialogOpen(true)}
+            variant="outlined"
+            color="error"
+            size={isMobile ? "medium" : "large"}
+            sx={{
+              minWidth: isMobile ? "auto" : 120,
+              fontSize: {
+                xs: "0.875rem",
+                sm: "1rem",
+              },
+            }}
+          >
+            Batalkan
+          </Button>
+        )}
+
         <Button
           onClick={onClose}
           variant="contained"
           color="primary"
-          fullWidth={isMobile}
+          fullWidth={isMobile && !isAdmin}
           size={isMobile ? "medium" : "large"}
           sx={{
             minWidth: isMobile ? "auto" : 100,
@@ -423,6 +528,119 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
           Tutup
         </Button>
       </DialogActions>
+
+      {/* Cancel Confirmation Dialog */}
+      <Dialog
+        open={cancelDialogOpen}
+        onClose={handleCancelDialogClose}
+        maxWidth="sm"
+        fullWidth
+        fullScreen={isMobile}
+        PaperProps={{
+          sx: {
+            bgcolor: "rgba(18, 18, 18, 0.95)",
+            color: "text.primary",
+            backdropFilter: "blur(10px)",
+            border: "1px solid rgba(255, 255, 255, 0.1)",
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            color: "white",
+            bgcolor: "rgba(255, 255, 255, 0.05)",
+            borderBottom: 1,
+            borderColor: "rgba(255, 255, 255, 0.1)",
+          }}
+        >
+          Batalkan Booking
+        </DialogTitle>
+        <DialogContent
+          sx={{
+            backgroundColor: "transparent",
+            color: "white",
+          }}
+        >
+          <Typography
+            variant="body1"
+            sx={{
+              mb: 3,
+              color: "white",
+              fontWeight: 500,
+            }}
+          >
+            Apakah Anda yakin ingin membatalkan booking ini?
+          </Typography>
+          <TextField
+            fullWidth
+            multiline
+            rows={3}
+            label="Alasan Pembatalan (Opsional)"
+            value={cancelReason}
+            onChange={(e) => setCancelReason(e.target.value)}
+            placeholder="Masukkan alasan pembatalan..."
+            sx={{
+              mt: 5,
+              "& .MuiInputBase-root": {
+                backgroundColor: "rgba(255, 255, 255, 0.05)",
+                color: "white",
+              },
+              "& .MuiInputLabel-root": {
+                color: "rgba(255, 255, 255, 0.7)",
+              },
+              "& .MuiOutlinedInput-notchedOutline": {
+                borderColor: "rgba(255, 255, 255, 0.2)",
+              },
+              "& .MuiInputBase-root:hover .MuiOutlinedInput-notchedOutline": {
+                borderColor: "rgba(255, 255, 255, 0.3)",
+              },
+              "& .MuiInputBase-root.Mui-focused .MuiOutlinedInput-notchedOutline":
+                {
+                  borderColor: "primary.main",
+                },
+              "& .MuiInputBase-input::placeholder": {
+                color: "rgba(255, 255, 255, 0.5)",
+                opacity: 0.7,
+              },
+            }}
+          />
+        </DialogContent>
+        <DialogActions
+          sx={{
+            p: 3,
+            gap: 1,
+            borderTop: 1,
+            borderColor: "rgba(255, 255, 255, 0.1)",
+            bgcolor: "rgba(255, 255, 255, 0.03)",
+          }}
+        >
+          <Button
+            onClick={handleCancelDialogClose}
+            variant="outlined"
+            fullWidth={isMobile}
+            disabled={cancelling}
+            sx={{
+              color: "white",
+              borderColor: "rgba(255, 255, 255, 0.3)",
+              "&:hover": {
+                borderColor: "rgba(255, 255, 255, 0.5)",
+                bgcolor: "rgba(255, 255, 255, 0.05)",
+              },
+            }}
+          >
+            Keluar
+          </Button>
+          <Button
+            onClick={handleCancelBooking}
+            variant="contained"
+            color="error"
+            fullWidth={isMobile}
+            disabled={cancelling}
+          >
+            {cancelling ? "Membatalkan..." : "Ya, Batalkan"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Dialog>
   );
 };
