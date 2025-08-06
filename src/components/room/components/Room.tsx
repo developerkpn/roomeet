@@ -30,6 +30,7 @@ const Room = () => {
   const [events, setEvents] = useState<any>();
   const axiosAuth = useAxiosAuth();
   const [deleteDialog, setDeleteDialog] = useState(false);
+  const [roomType, setRoomType] = useState<string>("all");
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
@@ -60,7 +61,11 @@ const Room = () => {
 
   useEffect(() => {
     const getRooms = async () => {
-      const get = await axiosAuth.get("/room");
+      let url = "/room";
+      if (roomType !== "all") {
+        url += `?is_virtual=${roomType === "virtual" ? "true" : "false"}`;
+      }
+      const get = await axiosAuth.get(url);
       setRooms(get.data);
     };
     getRooms();
@@ -117,7 +122,7 @@ const Room = () => {
         })
       );
     }
-  }, [books, axiosAuth]);
+  }, [books, axiosAuth, roomType]);
 
   const handleRoom = (e: any) => {
     const r = e.target.value;
@@ -138,7 +143,8 @@ const Room = () => {
       <Box
         sx={{
           display: "flex",
-          justifyContent: "end",
+          flexDirection: "column",
+          gap: 2,
           mt: 24,
           px: {
             xs: 1,
@@ -146,6 +152,21 @@ const Room = () => {
           },
         }}
       >
+        <FormControl size={isMobile ? "small" : "medium"}>
+          <InputLabel>Room Type</InputLabel>
+          <Select
+            value={roomType}
+            label="Room Type"
+            onChange={(e) => {
+              setRoomType(e.target.value);
+              setRoom(""); // Reset selected room when changing type
+            }}
+          >
+            <MenuItem value="all">All Rooms</MenuItem>
+            <MenuItem value="physical">Physical Rooms</MenuItem>
+            <MenuItem value="virtual">Virtual Rooms</MenuItem>
+          </Select>
+        </FormControl>
         {rooms ? (
           <FormControl fullWidth size={isMobile ? "small" : "medium"}>
             <InputLabel>Select Room</InputLabel>
@@ -158,6 +179,7 @@ const Room = () => {
               {rooms.map((room: any) => (
                 <MenuItem key={room.id} value={room.id_ruangan}>
                   {room.nama}
+                  {room.is_virtual === 'T' && " (Virtual)"}
                 </MenuItem>
               ))}
             </Select>
@@ -280,6 +302,19 @@ const Room = () => {
                   >
                     Capacity:
                   </Typography>
+                  {roomDetails.data[0].is_virtual === 'T' && (
+                    <Typography
+                      sx={{
+                        fontSize: {
+                          xs: "0.875rem",
+                          sm: "1rem",
+                        },
+                        fontWeight: 500,
+                      }}
+                    >
+                      Type:
+                    </Typography>
+                  )}
                 </Box>
                 <Box>
                   <Typography
@@ -302,6 +337,20 @@ const Room = () => {
                   >
                     {roomDetails.data[0].kapasitas} participants
                   </Typography>
+                  {roomDetails.data[0].is_virtual === 'T' && (
+                    <Typography
+                      sx={{
+                        fontSize: {
+                          xs: "0.875rem",
+                          sm: "1rem",
+                        },
+                        color: "primary.main",
+                        fontWeight: 500,
+                      }}
+                    >
+                      Virtual Room (Zoom)
+                    </Typography>
+                  )}
                 </Box>
               </Box>
               <Box

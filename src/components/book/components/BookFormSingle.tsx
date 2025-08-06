@@ -40,12 +40,17 @@ interface DefaultVal {
   category: string;
   hour: number | undefined;
   minute: number | undefined;
+  isVirtual: boolean;
 }
 
 interface Room {
   id_ruangan: string;
   nama: string;
   kapasitas: number;
+  is_virtual?: string;
+  zoom_link?: string;
+  zoom_meeting_id?: string;
+  zoom_passcode?: string;
 }
 
 interface BookingData {
@@ -65,6 +70,10 @@ interface BookingData {
   image: string;
   lokasi: string;
   kapasitas: number;
+  is_virtual?: string;
+  zoom_link?: string;
+  zoom_meeting_id?: string;
+  zoom_passcode?: string;
 }
 
 interface AvailabilityResponse {
@@ -93,6 +102,7 @@ export default function BookFormSingle({
       category: "",
       hour: 0,
       minute: 0,
+      isVirtual: false,
     } as DefaultVal,
   });
 
@@ -112,6 +122,7 @@ export default function BookFormSingle({
   const [isEdit, setIsEdit] = useState(!!editData);
   const [changed, setChanged] = useState(true);
   const [penalty, setPenalty] = useState<string | undefined>();
+  const [isVirtual, setIsVirtual] = useState(false);
 
   useEffect(() => {
     const checkPenalty = async () => {
@@ -143,7 +154,11 @@ export default function BookFormSingle({
         agenda: editData.agenda,
         remark: editData.remark || "",
         category: editData.category || "",
+        isVirtual: editData.is_virtual === "T",
       });
+      
+      // Set the virtual room state as well
+      setIsVirtual(editData.is_virtual === "T");
 
       setStartTime(moment(editData.time_start, "HH:mm").toDate());
       setEndTime(moment(editData.time_end, "HH:mm").toDate());
@@ -240,6 +255,7 @@ export default function BookFormSingle({
         participant: Number(values.capacity) || 0,
         category: values.category,
         id_book: editData?.id_book || "",
+        is_virtual: values.isVirtual,
       };
       console.log(payload);
 
@@ -484,6 +500,27 @@ export default function BookFormSingle({
                   value="EXT"
                   control={<Radio />}
                   label="External"
+                />
+              </RadioComp>
+              <RadioComp
+                name="isVirtual"
+                label="Room Type"
+                rules={{ required: "Select room type" }}
+                control={form.control}
+                onChangeOvr={(value: any) => {
+                  setIsVirtual(value === "true");
+                  setChanged(true);
+                }}
+              >
+                <FormControlLabel
+                  value={false}
+                  control={<Radio />}
+                  label="Physical Room"
+                />
+                <FormControlLabel
+                  value={true}
+                  control={<Radio />}
+                  label="Virtual Room (Zoom)"
                 />
               </RadioComp>
               <Button

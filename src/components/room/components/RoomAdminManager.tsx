@@ -1,5 +1,6 @@
 import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
 import { Delete, Edit } from "@mui/icons-material";
+import VideoCallIcon from "@mui/icons-material/VideoCall";
 import {
   Box,
   Button,
@@ -16,6 +17,7 @@ import {
   TableHead,
   TableRow,
   Typography,
+  Chip,
 } from "@mui/material";
 import React, { useState } from "react";
 import useSWR from "swr";
@@ -28,6 +30,10 @@ type RoomType = {
   category: string;
   image?: string;
   is_active?: string;
+  is_virtual?: string;
+  zoom_link?: string;
+  zoom_meeting_id?: string;
+  zoom_passcode?: string;
 };
 
 const emptyRoom: RoomType = {
@@ -38,6 +44,10 @@ const emptyRoom: RoomType = {
   category: "",
   image: "",
   is_active: "T",
+  is_virtual: "F",
+  zoom_link: "",
+  zoom_meeting_id: "",
+  zoom_passcode: "",
 };
 
 const RoomAdminManager = () => {
@@ -103,6 +113,7 @@ const RoomAdminManager = () => {
             <TableRow>
               <TableCell>ID</TableCell>
               <TableCell>Name</TableCell>
+              <TableCell>Type</TableCell>
               <TableCell>Capacity</TableCell>
               <TableCell>Location</TableCell>
               <TableCell>Category</TableCell>
@@ -115,8 +126,26 @@ const RoomAdminManager = () => {
               <TableRow key={room.id_ruangan}>
                 <TableCell>{room.id_ruangan}</TableCell>
                 <TableCell>{room.nama}</TableCell>
+                <TableCell>
+                  {room.is_virtual === 'T' ? (
+                    <Chip
+                      icon={<VideoCallIcon />}
+                      label="Virtual"
+                      size="small"
+                      color="primary"
+                      variant="outlined"
+                    />
+                  ) : (
+                    <Chip
+                      label="Physical"
+                      size="small"
+                      color="default"
+                      variant="outlined"
+                    />
+                  )}
+                </TableCell>
                 <TableCell>{room.kapasitas}</TableCell>
-                <TableCell>{room.lokasi}</TableCell>
+                <TableCell>{room.is_virtual === 'T' ? 'Online' : room.lokasi}</TableCell>
                 <TableCell>{room.category}</TableCell>
                 <TableCell>{room.is_active}</TableCell>
                 <TableCell>

@@ -6,7 +6,7 @@ import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
 import { useAuthStore } from "@/lib/store/useAuthStore";
 import CancelIcon from "@mui/icons-material/Cancel";
 import EditIcon from "@mui/icons-material/Edit";
-import { Box, Grid, IconButton, Typography } from "@mui/material";
+import { Box, Button, Grid, IconButton, Typography } from "@mui/material";
 import moment from "moment";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -26,6 +26,10 @@ interface CardListBookProp {
   approval: string;
   mutate: any;
   is_active: string;
+  is_virtual?: string;
+  zoom_link?: string;
+  zoom_meeting_id?: string;
+  zoom_passcode?: string;
 }
 
 interface AgendaDatas {
@@ -41,6 +45,10 @@ interface AgendaDatas {
   book_date: string;
   approval: string;
   status: string;
+  is_virtual?: string;
+  zoom_link?: string;
+  zoom_meeting_id?: string;
+  zoom_passcode?: string;
 }
 
 function CardListBook({
@@ -55,6 +63,10 @@ function CardListBook({
   id_room,
   approval,
   mutate,
+  is_virtual,
+  zoom_link,
+  zoom_meeting_id,
+  zoom_passcode,
 }: CardListBookProp) {
   const [actions, setActions] = useState(false);
   const [cancelling, setCancelling] = useState(false);
@@ -93,7 +105,47 @@ function CardListBook({
             <Typography variant="h3" sx={{ color: "primary.light" }}>
               {agendaTitle}
             </Typography>
-            <Typography variant="h4">{room}</Typography>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+              <Typography variant="h4" sx={{ m: 0 }}>
+                {room}
+              </Typography>
+              {is_virtual === "T" && zoom_link && (
+                <Button
+                  variant="text"
+                  size="small"
+                  onClick={() => window.open(zoom_link, "_blank")}
+                  sx={{
+                    fontSize: "1rem",
+                    minWidth: "auto",
+                    px: 10,
+                    py: 0,
+                    minHeight: "auto",
+                    lineHeight: 1,
+                    textTransform: "none",
+                    alignSelf: "center",
+                    "&:hover": {
+                      backgroundColor: "primary.light",
+                      color: "white",
+                    },
+                  }}
+                >
+                  Join
+                </Button>
+              )}
+            </Box>
+            <Typography
+              variant="body2"
+              sx={{ minHeight: "1.2rem", mb: 1, color: "white" }}
+            >
+              {is_virtual === "T" && zoom_meeting_id ? (
+                <>
+                  ID: {zoom_meeting_id}
+                  {zoom_passcode && ` • ${zoom_passcode}`}
+                </>
+              ) : (
+                " " // Empty space to maintain consistent height
+              )}
+            </Typography>
             <Typography>{`${moment(bookDate).format(
               "DD/MM/YYYY"
             )}`}</Typography>
@@ -218,6 +270,10 @@ export function CardsListBook({ date, status }: any) {
         id_room: item.id_room,
         approval: item.approval,
         is_active: item.is_active,
+        is_virtual: item.is_virtual,
+        zoom_link: item.zoom_link,
+        zoom_meeting_id: item.zoom_meeting_id,
+        zoom_passcode: item.zoom_passcode,
       }))
     : [];
   console.log(agendas);

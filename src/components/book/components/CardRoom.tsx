@@ -1,7 +1,8 @@
-import { Badge, Box, Button, Typography } from "@mui/material";
+import { Badge, Box, Button, Typography, Chip } from "@mui/material";
 import { CheckBadgeIcon } from "@heroicons/react/24/outline";
 import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
 import PlaceIcon from "@mui/icons-material/Place";
+import VideoCallIcon from "@mui/icons-material/VideoCall";
 import useSWR from "swr";
 import { CardsBookSkeleton } from "@/common/skeletons/CardSkeleton";
 import Image from "next/image";
@@ -13,6 +14,10 @@ interface RoomInfo {
   location: string;
   facility: Array<string>;
   image: string;
+  isVirtual?: boolean;
+  zoomLink?: string;
+  zoomMeetingId?: string;
+  zoomPasscode?: string;
 }
 
 interface RoomData {
@@ -23,6 +28,10 @@ interface RoomData {
   lokasi: string;
   image: string;
   fasilitas: Array<string>;
+  is_virtual?: string;
+  zoom_link?: string;
+  zoom_meeting_id?: string;
+  zoom_passcode?: string;
 }
 
 interface CardProp {
@@ -93,16 +102,27 @@ export const CardRoom = ({ roomInfo, selectedId, clickCard, error }: CardProp) =
           height={50}
         />
         <Box sx={{ px: 16, py: 8, textAlign: "left" }}>
-          <Typography variant="h3" sx={{ fontWeight: "bold", mb: 2 }}>
-            {roomInfo.name}
-          </Typography>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "start", mb: 2 }}>
+            <Typography variant="h3" sx={{ fontWeight: "bold" }}>
+              {roomInfo.name}
+            </Typography>
+            {roomInfo.isVirtual && (
+              <Chip
+                icon={<VideoCallIcon />}
+                label="Virtual"
+                size="small"
+                color="primary"
+                variant="filled"
+              />
+            )}
+          </Box>
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             <PeopleAltIcon />
             <Typography>{roomInfo.capacity} people</Typography>
           </Box>
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             <PlaceIcon />
-            <Typography>{roomInfo.location}</Typography>
+            <Typography>{roomInfo.isVirtual ? "Online" : roomInfo.location}</Typography>
           </Box>
           <Box sx={{ display: "flex", flexWrap: "wrap", gap: 4, pt: 6 }}>
             {roomInfo.facility.map((item, idx) => (
@@ -158,6 +178,10 @@ export const CardRooms = ({
         location: item.lokasi,
         facility: item.fasilitas,
         image: item.image,
+        isVirtual: item.is_virtual === 'T',
+        zoomLink: item.zoom_link,
+        zoomMeetingId: item.zoom_meeting_id,
+        zoomPasscode: item.zoom_passcode,
       };
     });
 

@@ -2,6 +2,7 @@
 import NumericFieldComp from "@/common/NumericField";
 import SelectComp from "@/common/Select";
 import { TextFieldComp } from "@/common/TextField";
+import RadioComp from "@/common/Radio";
 import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
 import {
   Box,
@@ -9,6 +10,8 @@ import {
   CircularProgress,
   MenuItem,
   Typography,
+  FormControlLabel,
+  Radio,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -22,14 +25,19 @@ interface RoomFormData {
   category: string;
   image: FileList | null;
   is_active: string;
+  is_virtual: string;
+  zoom_link: string;
+  zoom_meeting_id: string;
+  zoom_passcode: string;
 }
 
 export default function CreateRoomPage() {
   const [loading, setLoading] = useState(false);
+  const [isVirtual, setIsVirtual] = useState(false);
   const router = useRouter();
   const axiosAuth = useAxiosAuth();
 
-  const { control, handleSubmit, setValue } = useForm({
+  const { control, handleSubmit, setValue, watch } = useForm({
     defaultValues: {
       nama: "",
       kapasitas: 0,
@@ -37,8 +45,14 @@ export default function CreateRoomPage() {
       category: "",
       image: null,
       is_active: "T",
+      is_virtual: "F",
+      zoom_link: "",
+      zoom_meeting_id: "",
+      zoom_passcode: "",
     } as RoomFormData,
   });
+
+  const watchIsVirtual = watch("is_virtual");
 
   const onSubmit = async (values: RoomFormData) => {
     setLoading(true);
@@ -49,6 +63,10 @@ export default function CreateRoomPage() {
       formData.append("lokasi", values.lokasi);
       formData.append("category", values.category);
       formData.append("is_active", values.is_active);
+      formData.append("is_virtual", values.is_virtual);
+      formData.append("zoom_link", values.zoom_link || "");
+      formData.append("zoom_meeting_id", values.zoom_meeting_id || "");
+      formData.append("zoom_passcode", values.zoom_passcode || "");
 
       if (values.image && values.image.length > 0) {
         formData.append("image", values.image[0]);
@@ -132,6 +150,70 @@ export default function CreateRoomPage() {
             <MenuItem value="EXT">External</MenuItem>
           </SelectComp>
         </Box>
+
+        <Box sx={{ mb: 12 }}>
+          <RadioComp
+            name="is_virtual"
+            label="Room Type"
+            rules={{ required: "Select room type" }}
+            control={control}
+            onChangeOvr={(value: any) => {
+              setIsVirtual(value === "T");
+            }}
+          >
+            <FormControlLabel
+              value="F"
+              control={<Radio />}
+              label="Physical Room"
+            />
+            <FormControlLabel
+              value="T"
+              control={<Radio />}
+              label="Virtual Room (Zoom)"
+            />
+          </RadioComp>
+        </Box>
+
+        {watchIsVirtual === "T" && (
+          <>
+            <Box sx={{ mb: 12 }}>
+              <TextFieldComp
+                control={control}
+                label="Zoom Meeting Link"
+                name="zoom_link"
+                rules={{ 
+                  required: watchIsVirtual === "T" ? "Zoom link is required for virtual rooms" : false,
+                  pattern: {
+                    value: /^https?:\/\/.*/,
+                    message: "Please enter a valid URL starting with http:// or https://"
+                  }
+                }}
+                placeholder="https://zoom.us/j/1234567890"
+              />
+            </Box>
+
+            <Box sx={{ mb: 12 }}>
+              <TextFieldComp
+                control={control}
+                label="Zoom Meeting ID"
+                name="zoom_meeting_id"
+                rules={{ 
+                  required: watchIsVirtual === "T" ? "Meeting ID is required for virtual rooms" : false 
+                }}
+                placeholder="123 456 7890"
+              />
+            </Box>
+
+            <Box sx={{ mb: 12 }}>
+              <TextFieldComp
+                control={control}
+                label="Zoom Passcode (Optional)"
+                name="zoom_passcode"
+                placeholder="Meeting passcode"
+              />
+            </Box>
+          </>
+        )}
 
         <Box sx={{ mb: 12 }}>
           <Typography variant="body2" sx={{ mb: 1, color: "text.secondary" }}>
