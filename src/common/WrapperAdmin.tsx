@@ -27,7 +27,7 @@ const WrapperAdmin = ({ children }: WrapperChild) => {
         sx={{
           my: 8,
           px: {
-            xs: 2, // Reduced padding on mobile
+            xs: 10, // Reduced padding on mobile
             sm: 16,
           },
           flex: 1,

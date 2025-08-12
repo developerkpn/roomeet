@@ -27,9 +27,11 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import useSWR, { mutate } from "swr";
 import BigCalendar from "./BigCalendar";
+import { useAuthStore } from "@/lib/store/useAuthStore";
 
 const Room = () => {
   const { idroom } = useParams();
+  const user = useAuthStore((state) => state.user);
   const [rooms, setRooms] = useState<any>();
   const [room, setRoom] = useState<any>(idroom ? idroom[0] : "");
   const [events, setEvents] = useState<any>();
@@ -58,9 +60,7 @@ const Room = () => {
     fallback: { url: [] },
   });
 
-  const { data: roomDetails, loading } = useFetch<any>(
-    room ? `/room/fas?id_room=${room}` : ""
-  );
+  const { data: roomDetails, loading } = useFetch<any>(room ? `/room/fas?id_room=${room}` : "");
 
   // Function to refresh booking data
   const refreshBookings = () => {
@@ -194,10 +194,7 @@ const Room = () => {
     }
   };
 
-  const downloadQRCodeWithTemplate = async (
-    id_ruangan: string,
-    roomName: string
-  ) => {
+  const downloadQRCodeWithTemplate = async (id_ruangan: string, roomName: string) => {
     setDownloadLoading(true);
     try {
       // Get QR code as blob
@@ -293,7 +290,8 @@ const Room = () => {
       <Box
         sx={{
           display: "flex",
-          flexDirection: "column",
+          flexWrap: "wrap",
+          width: "100%",
           gap: 2,
           mt: 24,
           px: {
@@ -302,7 +300,7 @@ const Room = () => {
           },
         }}
       >
-        <FormControl size={isMobile ? "small" : "medium"}>
+        <FormControl fullWidth size={isMobile ? "small" : "medium"}>
           <InputLabel>Room Type</InputLabel>
           <Select
             value={roomType}
@@ -320,12 +318,7 @@ const Room = () => {
         {rooms ? (
           <FormControl fullWidth size={isMobile ? "small" : "medium"}>
             <InputLabel>Select Room</InputLabel>
-            <Select
-              defaultValue=""
-              value={room}
-              label="Select Room"
-              onChange={handleRoom}
-            >
+            <Select defaultValue="" value={room} label="Select Room" onChange={handleRoom}>
               {rooms.map((room: any) => (
                 <MenuItem key={room.id} value={room.id_ruangan}>
                   {room.nama}
@@ -335,12 +328,7 @@ const Room = () => {
             </Select>
           </FormControl>
         ) : (
-          <Skeleton
-            variant="rounded"
-            width="100%"
-            height={isMobile ? 48 : 64}
-            sx={{ bgcolor: "grey.700" }}
-          />
+          <Skeleton variant="rounded" width="100%" height={isMobile ? 48 : 64} sx={{ bgcolor: "grey.700" }} />
         )}
       </Box>
       {(isLoading || (room && loading)) && !events ? (
@@ -370,17 +358,10 @@ const Room = () => {
               },
             }}
           >
-            <Grid
-              item
-              xs={12}
-              md={roomDetails.data[0].is_virtual === "T" ? 8 : 4}
-            >
-              <Box>
-                <Typography variant="h6" sx={{ mb: 1, color: "primary.main" }}>
-                  Room Image
-                </Typography>
+            {roomDetails.data[0]?.image && (
+              <Grid item xs={12} md={8}>
                 <Image
-                  src={roomDetails.data[0].image}
+                  src={roomDetails.data[0]?.image ?? ""}
                   alt="Room Image"
                   style={{
                     width: "100%",
@@ -391,17 +372,13 @@ const Room = () => {
                   width={1000}
                   height={800}
                 />
-              </Box>
-            </Grid>
-
+              </Grid>
+            )}
             {/* QR Code Container - only for physical rooms */}
-            {roomDetails.data[0].is_virtual !== "T" && (
+            {roomDetails.data[0].is_virtual !== "T" && user?.role_name == "admin" && (
               <Grid item xs={12} md={4}>
                 <Box>
-                  <Typography
-                    variant="h6"
-                    sx={{ mb: 1, color: "primary.main" }}
-                  >
+                  <Typography variant="h6" sx={{ mb: 1, color: "primary.main" }}>
                     QR Code for Check-in
                   </Typography>
                   <Box
@@ -440,16 +417,11 @@ const Room = () => {
                           </Box>
                         ) : (
                           <Box>
-                            <QrCode2
-                              sx={{ fontSize: 48, color: "grey.400", mb: 2 }}
-                            />
-                            <Typography
-                              variant="body2"
-                              color="text.secondary"
-                              sx={{ mb: 2 }}
-                            >
+                            <QrCode2 sx={{ fontSize: 48, color: "grey.400", mb: 2 }} />
+                            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                               No QR Code generated
                             </Typography>
+
                             <Button
                               variant="outlined"
                               startIcon={<QrCode2 />}
@@ -502,24 +474,16 @@ const Room = () => {
               {/* Virtual Room Zoom Information */}
               {roomDetails.data[0].is_virtual === "T" && (
                 <Box sx={{ mt: 2, mb: 2 }}>
-                  <Typography
-                    variant="h6"
-                    sx={{ mb: 1, color: "primary.main" }}
-                  >
+                  <Typography variant="h6" sx={{ mb: 1, color: "primary.main" }}>
                     🎥 Virtual Meeting Details
                   </Typography>
 
                   {roomDetails.data[0].zoom_link && (
                     <Box sx={{ mb: 1 }}>
-                      <Typography
-                        variant="subtitle2"
-                        sx={{ fontWeight: "bold", mb: 0.5 }}
-                      >
+                      <Typography variant="subtitle2" sx={{ fontWeight: "bold", mb: 0.5 }}>
                         🔗 Zoom Link:
                       </Typography>
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                      >
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                         <Typography
                           variant="body2"
                           sx={{
@@ -528,18 +492,11 @@ const Room = () => {
                             cursor: "pointer",
                             wordBreak: "break-all",
                           }}
-                          onClick={() =>
-                            window.open(roomDetails.data[0].zoom_link, "_blank")
-                          }
+                          onClick={() => window.open(roomDetails.data[0].zoom_link, "_blank")}
                         >
                           {roomDetails.data[0].zoom_link}
                         </Typography>
-                        <IconButton
-                          size="small"
-                          onClick={() =>
-                            copyToClipboard(roomDetails.data[0].zoom_link)
-                          }
-                        >
+                        <IconButton size="small" onClick={() => copyToClipboard(roomDetails.data[0].zoom_link)}>
                           <ContentCopy fontSize="small" />
                         </IconButton>
                       </Box>
@@ -547,17 +504,11 @@ const Room = () => {
                   )}
 
                   {/* Meeting ID and Passcode side by side */}
-                  {(roomDetails.data[0].zoom_meeting_id ||
-                    roomDetails.data[0].zoom_passcode) && (
-                    <Box
-                      sx={{ display: "flex", gap: 2, mb: 1, flexWrap: "wrap" }}
-                    >
+                  {(roomDetails.data[0].zoom_meeting_id || roomDetails.data[0].zoom_passcode) && (
+                    <Box sx={{ display: "flex", gap: 2, mb: 1, flexWrap: "wrap" }}>
                       {roomDetails.data[0].zoom_meeting_id && (
                         <Box sx={{ flex: 1, minWidth: "120px" }}>
-                          <Typography
-                            variant="subtitle2"
-                            sx={{ fontWeight: "bold", mb: 0.5 }}
-                          >
+                          <Typography variant="subtitle2" sx={{ fontWeight: "bold", mb: 0.5 }}>
                             Meeting ID:
                           </Typography>
                           <Box
@@ -578,11 +529,7 @@ const Room = () => {
                             </Typography>
                             <IconButton
                               size="small"
-                              onClick={() =>
-                                copyToClipboard(
-                                  roomDetails.data[0].zoom_meeting_id
-                                )
-                              }
+                              onClick={() => copyToClipboard(roomDetails.data[0].zoom_meeting_id)}
                             >
                               <ContentCopy fontSize="small" />
                             </IconButton>
@@ -592,10 +539,7 @@ const Room = () => {
 
                       {roomDetails.data[0].zoom_passcode && (
                         <Box sx={{ flex: 1, minWidth: "120px" }}>
-                          <Typography
-                            variant="subtitle2"
-                            sx={{ fontWeight: "bold", mb: 0.5 }}
-                          >
+                          <Typography variant="subtitle2" sx={{ fontWeight: "bold", mb: 0.5 }}>
                             🔑 Passcode:
                           </Typography>
                           <Box
@@ -614,14 +558,7 @@ const Room = () => {
                             >
                               {roomDetails.data[0].zoom_passcode}
                             </Typography>
-                            <IconButton
-                              size="small"
-                              onClick={() =>
-                                copyToClipboard(
-                                  roomDetails.data[0].zoom_passcode
-                                )
-                              }
-                            >
+                            <IconButton size="small" onClick={() => copyToClipboard(roomDetails.data[0].zoom_passcode)}>
                               <ContentCopy fontSize="small" />
                             </IconButton>
                           </Box>
@@ -732,84 +669,77 @@ const Room = () => {
                   },
                 }}
               >
-                {roomDetails.data[0].fasilitas.map(
-                  (item: string, idx: string) => (
-                    <Box
-                      sx={{
-                        backgroundColor: "primary.main",
-                        color: "#fafafa",
-                        px: {
-                          xs: 6,
-                          sm: 10,
-                        },
-                        py: {
-                          xs: 2,
-                          sm: 4,
-                        },
-                        borderRadius: 2,
-                        fontSize: {
-                          xs: "0.75rem",
-                          sm: "0.875rem",
-                        },
-                      }}
-                      key={idx + item}
-                    >
-                      {item}
-                    </Box>
-                  )
-                )}
+                {roomDetails.data[0].fasilitas.map((item: string, idx: string) => (
+                  <Box
+                    sx={{
+                      backgroundColor: "primary.main",
+                      color: "#fafafa",
+                      px: {
+                        xs: 6,
+                        sm: 10,
+                      },
+                      py: {
+                        xs: 2,
+                        sm: 4,
+                      },
+                      borderRadius: 2,
+                      fontSize: {
+                        xs: "0.75rem",
+                        sm: "0.875rem",
+                      },
+                    }}
+                    key={idx + item}
+                  >
+                    {item}
+                  </Box>
+                ))}
               </Box>
             </Grid>
           </Grid>
-          <Box
-            sx={{
-              px: {
-                xs: 1,
-                sm: 0,
-              },
-              display: "flex",
-              gap: 20,
-              flexDirection: isMobile ? "column" : "row",
-              mt: 20, // Added more vertical spacing
-            }}
-          >
-            {/* Delete Room Button - on the left */}
-            <Button
-              color="error"
-              variant="contained"
-              size={isMobile ? "small" : "medium"}
+          {user?.role_name == "admin" && (
+            <Box
               sx={{
-                fontSize: {
-                  xs: "0.75rem",
-                  sm: "0.875rem",
+                px: {
+                  xs: 1,
+                  sm: 0,
                 },
               }}
-              onClick={() => setDeleteDialog(true)}
             >
-              Delete Room
-            </Button>
-
-            {/* Download QR Button - on the right, only for physical rooms with existing QR */}
-            {roomDetails.data[0].is_virtual !== "T" && qrCodeExists && (
               <Button
+                color="error"
                 variant="contained"
-                startIcon={<Download />}
-                onClick={() =>
-                  downloadQRCodeWithTemplate(room, roomDetails.data[0].nama)
-                }
                 size={isMobile ? "small" : "medium"}
-                disabled={downloadLoading}
                 sx={{
+                  mt: 2,
                   fontSize: {
                     xs: "0.75rem",
                     sm: "0.875rem",
                   },
                 }}
+                onClick={() => setDeleteDialog(true)}
               >
-                {downloadLoading ? "Preparing..." : "Download QR"}
+                Delete Room
               </Button>
-            )}
-          </Box>
+              {/* Download QR Button - on the right, only for physical rooms with existing QR */}
+              {roomDetails.data[0].is_virtual !== "T" && qrCodeExists && (
+                <Button
+                  variant="contained"
+                  startIcon={<Download />}
+                  onClick={() => downloadQRCodeWithTemplate(room, roomDetails.data[0].nama)}
+                  size={isMobile ? "small" : "medium"}
+                  disabled={downloadLoading}
+                  sx={{
+                    fontSize: {
+                      xs: "0.75rem",
+                      sm: "0.875rem",
+                    },
+                  }}
+                >
+                  {downloadLoading ? "Preparing..." : "Download QR"}
+                </Button>
+              )}
+            </Box>
+          )}
           <Dialog
             open={deleteDialog}
             onClose={() => setDeleteDialog(false)}
@@ -864,11 +794,7 @@ const Room = () => {
                 },
               }}
             >
-              <Button
-                onClick={() => setDeleteDialog(false)}
-                fullWidth={isMobile}
-                size={isMobile ? "medium" : "large"}
-              >
+              <Button onClick={() => setDeleteDialog(false)} fullWidth={isMobile} size={isMobile ? "medium" : "large"}>
                 Cancel
               </Button>
               <Button
@@ -928,11 +854,7 @@ const Room = () => {
         onClose={() => setCopySnackbar(false)}
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
-        <Alert
-          onClose={() => setCopySnackbar(false)}
-          severity="success"
-          sx={{ width: "100%" }}
-        >
+        <Alert onClose={() => setCopySnackbar(false)} severity="success" sx={{ width: "100%" }}>
           Copied to clipboard!
         </Alert>
       </Snackbar>

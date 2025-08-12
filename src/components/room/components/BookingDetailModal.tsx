@@ -58,9 +58,7 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
     user?.role_id === "43dba1a3-e595-4f0b-aaa8-9f33b28caf51";
 
   // Check if booking can be cancelled (only active bookings)
-  const canCancel =
-    event.resource?.approval === "approved" ||
-    event.resource?.approval === "pending";
+  const canCancel = event.resource?.approval === "approved" || event.resource?.approval === "pending";
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -181,16 +179,22 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
 
       <DialogContent
         sx={{
-          pt: 3,
-          px: {
-            xs: 2,
-            sm: 3,
-          },
           maxHeight: fullScreen ? "calc(100vh - 120px)" : "auto",
           overflow: "auto",
         }}
       >
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 4,
+            py: 5,
+            px: {
+              xs: 2,
+              sm: 3,
+            },
+          }}
+        >
           {/* Event Details Grid */}
           <Grid container spacing={isMobile ? 2 : 3}>
             {/* Meeting Title */}
@@ -457,10 +461,7 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
                         sm: "0.875rem",
                       },
                       wordBreak: "break-word",
-                      fontStyle:
-                        event.resource.remark === "No remarks"
-                          ? "italic"
-                          : "normal",
+                      fontStyle: event.resource.remark === "No remarks" ? "italic" : "normal",
                       color:
                         event.resource.remark === "No remarks"
                           ? "rgba(255, 255, 255, 0.5)"
@@ -594,10 +595,9 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
               "& .MuiInputBase-root:hover .MuiOutlinedInput-notchedOutline": {
                 borderColor: "rgba(255, 255, 255, 0.3)",
               },
-              "& .MuiInputBase-root.Mui-focused .MuiOutlinedInput-notchedOutline":
-                {
-                  borderColor: "primary.main",
-                },
+              "& .MuiInputBase-root.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                borderColor: "primary.main",
+              },
               "& .MuiInputBase-input::placeholder": {
                 color: "rgba(255, 255, 255, 0.5)",
                 opacity: 0.7,

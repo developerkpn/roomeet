@@ -7,6 +7,7 @@ interface UserInfo {
   email?: string;
   username?: string;
   role_id?: string;
+  role_name?: string;
   [key: string]: any;
 }
 
