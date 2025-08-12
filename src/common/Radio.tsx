@@ -13,7 +13,7 @@ const RadioComp = ({
 }: any) => {
   return (
     <Controller
-      rules={{ required: "Select category" }}
+      rules={rules || { required: "Field required" }}
       control={control}
       name={name}
       render={({ field: { value, onChange }, fieldState: { error } }) => (
@@ -26,7 +26,7 @@ const RadioComp = ({
               onChange={(e) => {
                 onChange(e);
                 if (onChangeOvr !== undefined) {
-                  onChangeOvr(e);
+                  onChangeOvr(e.target.value);
                 }
               }}
             >

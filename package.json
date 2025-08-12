@@ -28,6 +28,7 @@
     "mysql-await": "^2.2.3",
     "mysql2": "^3.11.0",
     "next": "14.2.5",
+    "qr-scanner": "^1.4.2",
     "react": "^18",
     "react-big-calendar": "^1.13.2",
     "react-dom": "^18",

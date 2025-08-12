@@ -40,7 +40,7 @@ interface DefaultVal {
   category: string;
   hour: number | undefined;
   minute: number | undefined;
-  isVirtual: boolean;
+  isVirtual: string;
 }
 
 interface Room {
@@ -102,7 +102,7 @@ export default function BookFormSingle({
       category: "",
       hour: 0,
       minute: 0,
-      isVirtual: false,
+      isVirtual: "false",
     } as DefaultVal,
   });
 
@@ -154,9 +154,9 @@ export default function BookFormSingle({
         agenda: editData.agenda,
         remark: editData.remark || "",
         category: editData.category || "",
-        isVirtual: editData.is_virtual === "T",
+        isVirtual: editData.is_virtual === "T" ? "true" : "false",
       });
-      
+
       // Set the virtual room state as well
       setIsVirtual(editData.is_virtual === "T");
 
@@ -255,7 +255,7 @@ export default function BookFormSingle({
         participant: Number(values.capacity) || 0,
         category: values.category,
         id_book: editData?.id_book || "",
-        is_virtual: values.isVirtual,
+        is_virtual: values.isVirtual === "true",
       };
       console.log(payload);
 
@@ -513,12 +513,12 @@ export default function BookFormSingle({
                 }}
               >
                 <FormControlLabel
-                  value={false}
+                  value="false"
                   control={<Radio />}
                   label="Physical Room"
                 />
                 <FormControlLabel
-                  value={true}
+                  value="true"
                   control={<Radio />}
                   label="Virtual Room (Zoom)"
                 />

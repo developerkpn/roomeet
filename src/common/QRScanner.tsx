@@ -1,6 +1,6 @@
 "use client";
 
-import { Close, QrCodeScanner } from "@mui/icons-material";
+import { Close, QrCodeScanner, Upload } from "@mui/icons-material";
 import {
   Box,
   Button,
@@ -9,11 +9,11 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
-  TextField,
   Typography,
 } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
+import QrScanner from "qr-scanner";
 
 interface QRScannerProps {
   onScan: (roomId: string) => void;
@@ -24,56 +24,103 @@ interface QRScannerProps {
 
 const QRScanner = ({ onScan, title, actionText, children }: QRScannerProps) => {
   const [open, setOpen] = useState(false);
-  const [manualInput, setManualInput] = useState("");
   const [isScanning, setIsScanning] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [uploadProcessing, setUploadProcessing] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const qrScannerRef = useRef<QrScanner | null>(null);
 
   const showScanner = () => setOpen(true);
 
   const handleClose = () => {
     setOpen(false);
-    setManualInput("");
     setCameraError(null);
+    setUploadProcessing(false);
     stopCamera();
   };
 
   const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
+    if (qrScannerRef.current) {
+      qrScannerRef.current.stop();
+      qrScannerRef.current.destroy();
+      qrScannerRef.current = null;
     }
     setIsScanning(false);
   };
 
   const startCamera = async () => {
     setCameraError(null);
+    console.log('Starting QR scanner...');
+    
     try {
-      // Check if navigator.mediaDevices is available
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error("Camera not supported by this browser");
+      // Check if QrScanner is available
+      if (typeof QrScanner === 'undefined') {
+        throw new Error('QrScanner library not loaded');
       }
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: "environment",
-          width: { ideal: 640 },
-          height: { ideal: 480 },
-        },
-      });
-
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
+      // Check browser compatibility first
+      if (!QrScanner.hasCamera()) {
+        throw new Error('No camera available on this device');
       }
+
+      // First set isScanning to true to render the video element
       setIsScanning(true);
-      toast("Camera started! Point at QR code or use manual input below", {
+      
+      // Wait for the video element to be rendered
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      console.log('Video element ref:', videoRef.current);
+      
+      if (!videoRef.current) {
+        throw new Error('Video element not found after rendering');
+      }
+
+      if (qrScannerRef.current) {
+        console.log('QR Scanner already exists, stopping it first');
+        await qrScannerRef.current.stop();
+        qrScannerRef.current.destroy();
+        qrScannerRef.current = null;
+      }
+
+      console.log('Creating new QR scanner instance...');
+      
+      // Initialize QR scanner - it will handle camera access internally
+      qrScannerRef.current = new QrScanner(
+        videoRef.current,
+        (result) => {
+          console.log('QR Code detected:', result.data);
+          toast.success('QR Code detected!');
+          handleScanResult(result.data);
+        },
+        {
+          preferredCamera: 'environment',
+          highlightScanRegion: true,
+          highlightCodeOutline: true,
+          maxScansPerSecond: 5,
+        }
+      );
+
+      console.log('QR scanner instance created, checking cameras...');
+      const cameras = await QrScanner.listCameras(true);
+      console.log('Available cameras:', cameras);
+
+      console.log('Starting QR scanner...');
+      await qrScannerRef.current.start();
+      console.log('QR Scanner started successfully');
+
+      toast("Camera started! Point at QR code", {
         icon: "📷",
       });
     } catch (error: any) {
-      console.error("Camera error:", error);
+      console.error("QR Scanner error:", error);
+      console.error("Error stack:", error.stack);
+      console.error("Error details:", {
+        name: error.name,
+        message: error.message,
+        code: error.code
+      });
+      
       let errorMessage = "Camera access failed";
 
       if (error.name === "NotAllowedError") {
@@ -89,36 +136,54 @@ const QRScanner = ({ onScan, title, actionText, children }: QRScannerProps) => {
 
       setCameraError(errorMessage);
       toast.error(errorMessage);
+      setIsScanning(false);
     }
   };
 
-  const handleManualSubmit = () => {
-    if (manualInput.trim()) {
-      onScan(manualInput.trim());
-      handleClose();
-    } else {
-      toast.error("Please enter a room ID");
-    }
-  };
+
 
   const handleScanResult = (roomId: string) => {
     onScan(roomId);
     handleClose();
   };
 
-  // Simple QR detection (in real implementation, you'd use a QR library like qr-scanner)
-  const simulateQRScan = () => {
-    // This is a placeholder - in real implementation you'd integrate with a QR scanning library
-    toast("Point camera at QR code (or use manual input below)", {
-      icon: "📷",
-    });
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Check if file is an image
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    setUploadProcessing(true);
+
+    try {
+      const result = await QrScanner.scanImage(file);
+      
+      if (result) {
+        toast.success('QR Code detected from image!');
+        handleScanResult(result);
+      } else {
+        toast.error('No QR code found in the image');
+      }
+    } catch (error) {
+      console.error('Error scanning image:', error);
+      toast.error('Failed to scan QR code from image. Please try a clearer image.');
+    } finally {
+      setUploadProcessing(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
   };
 
-  useEffect(() => {
-    if (isScanning) {
-      simulateQRScan();
-    }
-  }, [isScanning]);
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
 
   useEffect(() => {
     return () => {
@@ -160,31 +225,66 @@ const QRScanner = ({ onScan, title, actionText, children }: QRScannerProps) => {
         <DialogContent>
           <Box sx={{ textAlign: "center", mb: 2 }}>
             {!isScanning ? (
-              <Button
-                variant="outlined"
-                startIcon={<QrCodeScanner />}
-                onClick={startCamera}
-                size="large"
-                sx={{ mb: 2 }}
-              >
-                Scan QR Code
-              </Button>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center' }}>
+                <Button
+                  variant="outlined"
+                  startIcon={<QrCodeScanner />}
+                  onClick={startCamera}
+                  size="large"
+                  fullWidth
+                >
+                  Scan with Camera
+                </Button>
+                <Typography variant="body2" color="text.secondary">
+                  or
+                </Typography>
+                <Button
+                  variant="outlined"
+                  startIcon={<Upload />}
+                  onClick={handleUploadClick}
+                  size="large"
+                  fullWidth
+                  disabled={uploadProcessing}
+                >
+                  {uploadProcessing ? 'Processing...' : 'Upload QR Image'}
+                </Button>
+              </Box>
             ) : (
               <Box>
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  style={{
-                    width: "100%",
-                    maxWidth: "400px",
-                    height: "300px",
-                    objectFit: "cover",
-                    borderRadius: "8px",
-                    backgroundColor: "#000",
-                  }}
-                />
+                <Box sx={{ position: 'relative', display: 'inline-block' }}>
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    style={{
+                      width: "100%",
+                      maxWidth: "400px",
+                      height: "300px",
+                      objectFit: "cover",
+                      borderRadius: "8px",
+                      backgroundColor: "#000",
+                    }}
+                  />
+                  {isScanning && (
+                    <Typography 
+                      variant="caption" 
+                      sx={{ 
+                        position: 'absolute', 
+                        bottom: 8, 
+                        left: '50%', 
+                        transform: 'translateX(-50%)',
+                        color: 'white',
+                        bgcolor: 'rgba(0,0,0,0.7)',
+                        px: 1,
+                        py: 0.5,
+                        borderRadius: 1
+                      }}
+                    >
+                      Scanning for QR codes...
+                    </Typography>
+                  )}
+                </Box>
                 <Button variant="text" onClick={stopCamera} sx={{ mt: 1 }}>
                   Stop Camera
                 </Button>
@@ -202,81 +302,29 @@ const QRScanner = ({ onScan, title, actionText, children }: QRScannerProps) => {
             )}
           </Box>
 
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            align="center"
-            sx={{ mb: 2 }}
-          >
-            {cameraError
-              ? "Enter room ID manually:"
-              : "Or enter room ID manually:"}
-          </Typography>
-
-          <TextField
-            fullWidth
-            label="Room ID"
-            value={manualInput}
-            onChange={(e) => setManualInput(e.target.value.toUpperCase())}
-            placeholder="e.g., ROOM001"
-            size="small"
-            sx={{
-              mb: 2,
-              "& .MuiInputBase-root": {
-                bgcolor: "rgba(255, 255, 255, 0.05)",
-                borderRadius: 1,
-                "&:hover": {
-                  bgcolor: "rgba(255, 255, 255, 0.08)",
-                },
-                "&.Mui-focused": {
-                  bgcolor: "rgba(255, 255, 255, 0.1)",
-                },
-              },
-              "& .MuiInputLabel-root": {
-                color: "text.secondary",
-                fontSize: "0.875rem",
-                "&.Mui-focused": {
-                  color: "primary.main",
-                },
-              },
-              "& .MuiOutlinedInput-notchedOutline": {
-                borderColor: "rgba(255, 255, 255, 0.3)",
-              },
-              "& .MuiInputBase-root:hover .MuiOutlinedInput-notchedOutline": {
-                borderColor: "rgba(255, 255, 255, 0.3)",
-              },
-              "& .MuiInputBase-root.Mui-focused .MuiOutlinedInput-notchedOutline":
-                {
-                  borderColor: "primary.main",
-                },
-              "& .MuiInputBase-input": {
-                color: "text.primary",
-                fontSize: "0.875rem",
-                "&::placeholder": {
-                  color: "text.disabled",
-                  opacity: 0.6,
-                },
-              },
-            }}
-          />
-
           <Typography variant="caption" color="text.secondary">
-            Scan the QR code on the room door or enter the room ID manually.
+            {isScanning 
+              ? "The scanner will automatically detect QR codes when they appear in the camera view." 
+              : "Scan the QR code with your camera or upload a QR image from your gallery."
+            }
           </Typography>
         </DialogContent>
 
         <DialogActions>
           <Button onClick={handleClose} color="inherit">
-            Cancel
-          </Button>
-          <Button
-            onClick={handleManualSubmit}
-            variant="contained"
-            disabled={!manualInput.trim()}
-          >
-            {actionText}
+            Close
           </Button>
         </DialogActions>
+        
+        {/* Hidden file input for image upload */}
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileUpload}
+          accept="image/*"
+          style={{ display: 'none' }}
+          capture="environment"
+        />
       </Dialog>
     </>
   );

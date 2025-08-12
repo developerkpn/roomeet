@@ -73,6 +73,7 @@ export const CardRoom = ({ roomInfo, selectedId, clickCard, error }: CardProp) =
           alignItems: "start",
           justifyContent: "start",
           width: "100%",
+          height: "280px", // Reduced height for more compact cards
           p: 0,
           ...(roomInfo.id === selectedId && {
             borderWidth: "4px",
@@ -89,21 +90,58 @@ export const CardRoom = ({ roomInfo, selectedId, clickCard, error }: CardProp) =
         variant="contained"
         color="warning"
       >
-        <Image
-          src={roomInfo.image}
-          alt="Image"
-          style={{
-            width: "100%",
-            height: "40%",
-            objectFit: "cover",
-            borderRadius: "0.75rem 0.75rem 0 0",
+        {/* Fixed Image Section */}
+        <Box sx={{ width: "100%", height: "120px", flexShrink: 0 }}>
+          <Image
+            src={roomInfo.image}
+            alt="Room Image"
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              borderRadius: "0.75rem 0.75rem 0 0",
+            }}
+            width={300}
+            height={160}
+          />
+        </Box>
+        
+        {/* Content Section - Fixed Height with Flex Layout */}
+        <Box 
+          sx={{ 
+            px: 16, 
+            py: 8, 
+            textAlign: "left", 
+            height: "160px", // Reduced content height
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            width: "100%"
           }}
-          width={100}
-          height={50}
-        />
-        <Box sx={{ px: 16, py: 8, textAlign: "left" }}>
-          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "start", mb: 2 }}>
-            <Typography variant="h3" sx={{ fontWeight: "bold" }}>
+        >
+          {/* Header Section with Name and Badge */}
+          <Box sx={{ 
+            display: "flex", 
+            justifyContent: "space-between", 
+            alignItems: "flex-start", 
+            mb: 2,
+            minHeight: "32px", // Reduced header height
+            gap: 2 // Add gap between name and badge
+          }}>
+            <Typography 
+              variant="h3" 
+              sx={{ 
+                fontWeight: "bold",
+                flex: 1,
+                mr: 1, // Add margin to create space before badge
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+                lineHeight: 1.2
+              }}
+            >
               {roomInfo.name}
             </Typography>
             {roomInfo.isVirtual && (
@@ -113,32 +151,71 @@ export const CardRoom = ({ roomInfo, selectedId, clickCard, error }: CardProp) =
                 size="small"
                 color="primary"
                 variant="filled"
+                sx={{ flexShrink: 0 }} // Prevent badge from shrinking
               />
             )}
           </Box>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <PeopleAltIcon />
-            <Typography>{roomInfo.capacity} people</Typography>
+          
+          {/* Room Details Section */}
+          <Box sx={{ flex: 1, display: "flex", flexDirection: "column", gap: 1 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+              <PeopleAltIcon fontSize="small" />
+              <Typography variant="body2">{roomInfo.capacity} people</Typography>
+            </Box>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+              <PlaceIcon fontSize="small" />
+              <Typography 
+                variant="body2"
+                sx={{
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap"
+                }}
+              >
+                {roomInfo.isVirtual ? "Online" : roomInfo.location}
+              </Typography>
+            </Box>
           </Box>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <PlaceIcon />
-            <Typography>{roomInfo.isVirtual ? "Online" : roomInfo.location}</Typography>
-          </Box>
-          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 4, pt: 6 }}>
-            {roomInfo.facility.map((item, idx) => (
+          
+          {/* Facilities Section - Fixed Height */}
+          <Box sx={{ 
+            display: "flex", 
+            flexWrap: "wrap", 
+            gap: 1, 
+            pt: 2,
+            minHeight: "40px", // Reduced height for facilities
+            alignContent: "flex-start"
+          }}>
+            {roomInfo.facility.slice(0, 4).map((item, idx) => ( // Limit to 4 facilities
               <Box
                 sx={{
                   backgroundColor: "grey.900",
                   color: "#fafafa",
-                  px: 6,
-                  py: 2,
+                  px: 2,
+                  py: 1,
                   borderRadius: 1,
+                  fontSize: "0.75rem",
+                  flexShrink: 0
                 }}
                 key={idx + item}
               >
-                {item}
+                {item.length > 8 ? item.substring(0, 8) + "..." : item}
               </Box>
             ))}
+            {roomInfo.facility.length > 4 && (
+              <Box
+                sx={{
+                  backgroundColor: "grey.600",
+                  color: "#fafafa",
+                  px: 2,
+                  py: 1,
+                  borderRadius: 1,
+                  fontSize: "0.75rem",
+                }}
+              >
+                +{roomInfo.facility.length - 4}
+              </Box>
+            )}
           </Box>
         </Box>
       </Button>
@@ -221,11 +298,14 @@ export const CardRooms = ({
             <Box 
               key={item.id} 
               sx={{ 
-                minWidth: "300px", // Fixed width to ensure cards don't shrink
-                maxWidth: "300px",
+                minWidth: "320px", // Slightly increased width for better spacing
+                maxWidth: "320px",
+                height: "320px", // Reduced height to match new card height + badge space
                 pt: 18, 
-                pb: 32, 
-                pr: 16 
+                pb: 16, 
+                pr: 16,
+                display: "flex",
+                alignItems: "stretch" // Ensures cards stretch to full height
               }}
             >
               <CardRoom

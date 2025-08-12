@@ -1,18 +1,23 @@
 import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
 import useFetch from "@/lib/hooks/useFetch";
+import { ContentCopy, Download, QrCode2 } from "@mui/icons-material";
 import {
+  Alert,
   Box,
   Button,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   FormControl,
   Grid,
+  IconButton,
   InputLabel,
   MenuItem,
   Select,
   Skeleton,
+  Snackbar,
   Typography,
   useMediaQuery,
   useTheme,
@@ -31,6 +36,11 @@ const Room = () => {
   const axiosAuth = useAxiosAuth();
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [roomType, setRoomType] = useState<string>("all");
+  const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
+  const [qrCodeExists, setQrCodeExists] = useState<boolean>(false);
+  const [qrCodeLoading, setQrCodeLoading] = useState<boolean>(false);
+  const [copySnackbar, setCopySnackbar] = useState<boolean>(false);
+  const [downloadLoading, setDownloadLoading] = useState<boolean>(false);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
@@ -138,6 +148,146 @@ const Room = () => {
     setRooms(get.data);
   };
 
+  const checkQRCodeExists = async (id_ruangan: string) => {
+    try {
+      const response = await axiosAuth.get(`/room/${id_ruangan}/qrcode/check`);
+      return response.data;
+    } catch (error) {
+      console.error("Error checking QR code:", error);
+      return { exists: false, qr_code_url: null };
+    }
+  };
+
+  const generateQRCode = async (id_ruangan: string) => {
+    setQrCodeLoading(true);
+    try {
+      const response = await axiosAuth.post(
+        `/room/${id_ruangan}/qrcode/generate`,
+        {},
+        {
+          responseType: "blob",
+        }
+      );
+
+      // Create blob URL for immediate display
+      const imageBlob = new Blob([response.data], { type: "image/png" });
+      const imageUrl = URL.createObjectURL(imageBlob);
+
+      setQrCodeUrl(imageUrl);
+      setQrCodeExists(true);
+
+      return imageUrl;
+    } catch (error) {
+      console.error("Error generating QR code:", error);
+      throw error;
+    } finally {
+      setQrCodeLoading(false);
+    }
+  };
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopySnackbar(true);
+    } catch (error) {
+      console.error("Failed to copy:", error);
+    }
+  };
+
+  const downloadQRCodeWithTemplate = async (
+    id_ruangan: string,
+    roomName: string
+  ) => {
+    setDownloadLoading(true);
+    try {
+      // Get QR code as blob
+      const response = await axiosAuth.post(
+        `/room/${id_ruangan}/qrcode/generate`,
+        {},
+        {
+          responseType: "blob",
+        }
+      );
+
+      // Create canvas for template with higher resolution
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("Canvas context not available");
+
+      // Set canvas dimensions - increased for higher resolution
+      canvas.width = 800;
+      canvas.height = 900;
+
+      // Fill white background
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Add room name with higher resolution fonts
+      ctx.fillStyle = "#000000";
+      ctx.font = "bold 48px Arial";
+      ctx.textAlign = "center";
+      ctx.fillText(roomName, canvas.width / 2, 80);
+
+      // Add room ID
+      ctx.fillStyle = "#000000";
+      ctx.font = "32px Arial";
+      ctx.fillText(`Room ID: ${id_ruangan}`, canvas.width / 2, 140);
+
+      // Load and draw QR code
+      const qrImage = document.createElement("img");
+      const imageBlob = new Blob([response.data], { type: "image/png" });
+      const imageUrl = URL.createObjectURL(imageBlob);
+
+      qrImage.onload = () => {
+        // Draw QR code centered with higher resolution
+        const qrSize = 560; // Doubled for higher resolution
+        const qrX = (canvas.width - qrSize) / 2;
+        const qrY = 200; // Adjusted for new layout
+        ctx.drawImage(qrImage, qrX, qrY, qrSize, qrSize);
+
+        // No footer text - removed as requested
+
+        // Download the canvas as image
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `${id_ruangan}_QR_Template.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+          }
+        }, "image/png");
+
+        URL.revokeObjectURL(imageUrl);
+      };
+
+      qrImage.src = imageUrl;
+    } catch (error) {
+      console.error("Error downloading QR code template:", error);
+    } finally {
+      setDownloadLoading(false);
+    }
+  };
+
+  // Check QR code when room changes
+  useEffect(() => {
+    const checkQRCode = async () => {
+      if (room && roomDetails?.data[0]?.is_virtual !== "T") {
+        const result = await checkQRCodeExists(room);
+        setQrCodeExists(result.exists);
+        setQrCodeUrl(result.qr_code_url);
+      } else {
+        setQrCodeExists(false);
+        setQrCodeUrl(null);
+      }
+    };
+    checkQRCode();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [room, roomDetails]);
+
   return (
     <>
       <Box
@@ -179,7 +329,7 @@ const Room = () => {
               {rooms.map((room: any) => (
                 <MenuItem key={room.id} value={room.id_ruangan}>
                   {room.nama}
-                  {room.is_virtual === 'T' && " (Virtual)"}
+                  {room.is_virtual === "T" && " (Virtual)"}
                 </MenuItem>
               ))}
             </Select>
@@ -220,20 +370,102 @@ const Room = () => {
               },
             }}
           >
-            <Grid item xs={12} md={8}>
-              <Image
-                src={roomDetails.data[0].image}
-                alt="Room Image"
-                style={{
-                  width: "100%",
-                  height: isMobile ? "200px" : "250px",
-                  objectFit: "cover",
-                  borderRadius: "0.75rem",
-                }}
-                width={1000}
-                height={800}
-              />
+            <Grid
+              item
+              xs={12}
+              md={roomDetails.data[0].is_virtual === "T" ? 8 : 4}
+            >
+              <Box>
+                <Typography variant="h6" sx={{ mb: 1, color: "primary.main" }}>
+                  Room Image
+                </Typography>
+                <Image
+                  src={roomDetails.data[0].image}
+                  alt="Room Image"
+                  style={{
+                    width: "100%",
+                    height: isMobile ? "200px" : "250px",
+                    objectFit: "cover",
+                    borderRadius: "0.75rem",
+                  }}
+                  width={1000}
+                  height={800}
+                />
+              </Box>
             </Grid>
+
+            {/* QR Code Container - only for physical rooms */}
+            {roomDetails.data[0].is_virtual !== "T" && (
+              <Grid item xs={12} md={4}>
+                <Box>
+                  <Typography
+                    variant="h6"
+                    sx={{ mb: 1, color: "primary.main" }}
+                  >
+                    QR Code for Check-in
+                  </Typography>
+                  <Box
+                    sx={{
+                      height: isMobile ? "200px" : "250px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      border: qrCodeExists ? "none" : "2px dashed",
+                      borderColor: "grey.300",
+                      borderRadius: "0.75rem",
+                      position: "relative",
+                    }}
+                  >
+                    {qrCodeExists && qrCodeUrl ? (
+                      <Image
+                        src={qrCodeUrl}
+                        alt={`QR Code for ${room}`}
+                        style={{
+                          width: "100%",
+                          height: isMobile ? "200px" : "250px",
+                          objectFit: "contain",
+                          borderRadius: "0.75rem",
+                        }}
+                        width={256}
+                        height={256}
+                      />
+                    ) : (
+                      <Box sx={{ textAlign: "center" }}>
+                        {qrCodeLoading ? (
+                          <Box>
+                            <CircularProgress />
+                            <Typography variant="body2" sx={{ mt: 1 }}>
+                              Generating QR Code...
+                            </Typography>
+                          </Box>
+                        ) : (
+                          <Box>
+                            <QrCode2
+                              sx={{ fontSize: 48, color: "grey.400", mb: 2 }}
+                            />
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              sx={{ mb: 2 }}
+                            >
+                              No QR Code generated
+                            </Typography>
+                            <Button
+                              variant="outlined"
+                              startIcon={<QrCode2 />}
+                              onClick={() => generateQRCode(room)}
+                              size={isMobile ? "small" : "medium"}
+                            >
+                              Generate QR Code
+                            </Button>
+                          </Box>
+                        )}
+                      </Box>
+                    )}
+                  </Box>
+                </Box>
+              </Grid>
+            )}
             <Grid item xs={12} md={4}>
               <Typography
                 variant={isMobile ? "h2" : "h1"}
@@ -266,6 +498,139 @@ const Room = () => {
               >
                 For {roomDetails.data[0].remark}
               </Typography>
+
+              {/* Virtual Room Zoom Information */}
+              {roomDetails.data[0].is_virtual === "T" && (
+                <Box sx={{ mt: 2, mb: 2 }}>
+                  <Typography
+                    variant="h6"
+                    sx={{ mb: 1, color: "primary.main" }}
+                  >
+                    🎥 Virtual Meeting Details
+                  </Typography>
+
+                  {roomDetails.data[0].zoom_link && (
+                    <Box sx={{ mb: 1 }}>
+                      <Typography
+                        variant="subtitle2"
+                        sx={{ fontWeight: "bold", mb: 0.5 }}
+                      >
+                        🔗 Zoom Link:
+                      </Typography>
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                      >
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: "primary.main",
+                            textDecoration: "underline",
+                            cursor: "pointer",
+                            wordBreak: "break-all",
+                          }}
+                          onClick={() =>
+                            window.open(roomDetails.data[0].zoom_link, "_blank")
+                          }
+                        >
+                          {roomDetails.data[0].zoom_link}
+                        </Typography>
+                        <IconButton
+                          size="small"
+                          onClick={() =>
+                            copyToClipboard(roomDetails.data[0].zoom_link)
+                          }
+                        >
+                          <ContentCopy fontSize="small" />
+                        </IconButton>
+                      </Box>
+                    </Box>
+                  )}
+
+                  {/* Meeting ID and Passcode side by side */}
+                  {(roomDetails.data[0].zoom_meeting_id ||
+                    roomDetails.data[0].zoom_passcode) && (
+                    <Box
+                      sx={{ display: "flex", gap: 2, mb: 1, flexWrap: "wrap" }}
+                    >
+                      {roomDetails.data[0].zoom_meeting_id && (
+                        <Box sx={{ flex: 1, minWidth: "120px" }}>
+                          <Typography
+                            variant="subtitle2"
+                            sx={{ fontWeight: "bold", mb: 0.5 }}
+                          >
+                            Meeting ID:
+                          </Typography>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                            }}
+                          >
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                fontFamily: "monospace",
+                                fontSize: "0.9rem",
+                              }}
+                            >
+                              {roomDetails.data[0].zoom_meeting_id}
+                            </Typography>
+                            <IconButton
+                              size="small"
+                              onClick={() =>
+                                copyToClipboard(
+                                  roomDetails.data[0].zoom_meeting_id
+                                )
+                              }
+                            >
+                              <ContentCopy fontSize="small" />
+                            </IconButton>
+                          </Box>
+                        </Box>
+                      )}
+
+                      {roomDetails.data[0].zoom_passcode && (
+                        <Box sx={{ flex: 1, minWidth: "120px" }}>
+                          <Typography
+                            variant="subtitle2"
+                            sx={{ fontWeight: "bold", mb: 0.5 }}
+                          >
+                            🔑 Passcode:
+                          </Typography>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                            }}
+                          >
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                fontFamily: "monospace",
+                                fontSize: "0.9rem",
+                              }}
+                            >
+                              {roomDetails.data[0].zoom_passcode}
+                            </Typography>
+                            <IconButton
+                              size="small"
+                              onClick={() =>
+                                copyToClipboard(
+                                  roomDetails.data[0].zoom_passcode
+                                )
+                              }
+                            >
+                              <ContentCopy fontSize="small" />
+                            </IconButton>
+                          </Box>
+                        </Box>
+                      )}
+                    </Box>
+                  )}
+                </Box>
+              )}
               <Box
                 sx={{
                   display: "flex",
@@ -302,7 +667,7 @@ const Room = () => {
                   >
                     Capacity:
                   </Typography>
-                  {roomDetails.data[0].is_virtual === 'T' && (
+                  {roomDetails.data[0].is_virtual === "T" && (
                     <Typography
                       sx={{
                         fontSize: {
@@ -337,7 +702,7 @@ const Room = () => {
                   >
                     {roomDetails.data[0].kapasitas} participants
                   </Typography>
-                  {roomDetails.data[0].is_virtual === 'T' && (
+                  {roomDetails.data[0].is_virtual === "T" && (
                     <Typography
                       sx={{
                         fontSize: {
@@ -402,14 +767,18 @@ const Room = () => {
                 xs: 1,
                 sm: 0,
               },
+              display: "flex",
+              gap: 20,
+              flexDirection: isMobile ? "column" : "row",
+              mt: 20, // Added more vertical spacing
             }}
           >
+            {/* Delete Room Button - on the left */}
             <Button
               color="error"
               variant="contained"
               size={isMobile ? "small" : "medium"}
               sx={{
-                mt: 2,
                 fontSize: {
                   xs: "0.75rem",
                   sm: "0.875rem",
@@ -419,6 +788,27 @@ const Room = () => {
             >
               Delete Room
             </Button>
+
+            {/* Download QR Button - on the right, only for physical rooms with existing QR */}
+            {roomDetails.data[0].is_virtual !== "T" && qrCodeExists && (
+              <Button
+                variant="contained"
+                startIcon={<Download />}
+                onClick={() =>
+                  downloadQRCodeWithTemplate(room, roomDetails.data[0].nama)
+                }
+                size={isMobile ? "small" : "medium"}
+                disabled={downloadLoading}
+                sx={{
+                  fontSize: {
+                    xs: "0.75rem",
+                    sm: "0.875rem",
+                  },
+                }}
+              >
+                {downloadLoading ? "Preparing..." : "Download QR"}
+              </Button>
+            )}
           </Box>
           <Dialog
             open={deleteDialog}
@@ -530,6 +920,23 @@ const Room = () => {
           Error fetching data
         </Typography>
       )}
+
+      {/* Copy Success Snackbar */}
+      <Snackbar
+        open={copySnackbar}
+        autoHideDuration={3000}
+        onClose={() => setCopySnackbar(false)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setCopySnackbar(false)}
+          severity="success"
+          sx={{ width: "100%" }}
+        >
+          Copied to clipboard!
+        </Alert>
+      </Snackbar>
+
       {/* <CardEvent /> */}
     </>
   );

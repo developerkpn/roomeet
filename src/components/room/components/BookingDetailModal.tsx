@@ -507,7 +507,7 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
               },
             }}
           >
-            Batalkan
+            Batalkan Booking
           </Button>
         )}
 
