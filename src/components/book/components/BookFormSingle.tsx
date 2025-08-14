@@ -9,16 +9,7 @@ import { TextFieldComp } from "@/common/TextField";
 import TimePickerComp from "@/common/TimePicker";
 import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
 import { useAuthStore } from "@/lib/store/useAuthStore";
-import {
-  Alert,
-  Box,
-  Button,
-  FormControlLabel,
-  Grid,
-  Radio,
-  TextField,
-  Typography,
-} from "@mui/material";
+import { Alert, Box, Button, FormControlLabel, Grid, Radio, TextField, Typography } from "@mui/material";
 import axios, { AxiosError } from "axios";
 import { format } from "date-fns";
 import moment from "moment";
@@ -81,11 +72,7 @@ interface AvailabilityResponse {
   data: Room[];
 }
 
-export default function BookFormSingle({
-  editData,
-}: {
-  editData: BookingData | undefined;
-}) {
+export default function BookFormSingle({ editData }: { editData: BookingData | undefined }) {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const axiosAuth = useAxiosAuth();
@@ -163,15 +150,8 @@ export default function BookFormSingle({
       setStartTime(moment(editData.time_start, "HH:mm").toDate());
       setEndTime(moment(editData.time_end, "HH:mm").toDate());
 
-      const tempHour = moment(editData.time_end, "HH:mm").diff(
-        moment(editData.time_start, "HH:mm"),
-        "hours"
-      );
-      const tempMinute =
-        moment(editData.time_end, "HH:mm").diff(
-          moment(editData.time_start, "HH:mm"),
-          "minutes"
-        ) % 60;
+      const tempHour = moment(editData.time_end, "HH:mm").diff(moment(editData.time_start, "HH:mm"), "hours");
+      const tempMinute = moment(editData.time_end, "HH:mm").diff(moment(editData.time_start, "HH:mm"), "minutes") % 60;
 
       setHour(tempHour);
       setMinute(tempMinute);
@@ -234,15 +214,7 @@ export default function BookFormSingle({
     form.setValue("ruangan", "");
     form.setValue("hour", hour);
     form.setValue("minute", minute);
-    const valid = await form.trigger([
-      "dateBook",
-      "startTime",
-      "endTime",
-      "capacity",
-      "category",
-      "hour",
-      "minute",
-    ]);
+    const valid = await form.trigger(["dateBook", "startTime", "endTime", "capacity", "category", "hour", "minute"]);
     // console.log(hour, minute);
 
     // console.log(form.getValues());
@@ -257,7 +229,7 @@ export default function BookFormSingle({
         id_book: editData?.id_book || "",
         is_virtual: values.isVirtual === "true",
       };
-      console.log(payload);
+      console.log(payload, "checkavail payload");
 
       try {
         const res = await axiosAuth.post("/room/search-avail", {
@@ -270,13 +242,11 @@ export default function BookFormSingle({
           setAvailable(true);
           const tempRooms = res.data.data;
           setRooms(tempRooms);
-          console.log(tempRooms);
+          console.log(tempRooms, "tempRooms");
 
           // In edit mode, automatically select the current room if available
           if (isEdit && editData && editData.id_ruangan) {
-            const currentRoom = tempRooms.find(
-              (room: Room) => room.id_ruangan === editData.id_ruangan
-            );
+            const currentRoom = tempRooms.find((room: Room) => room.id_ruangan === editData.id_ruangan);
             if (currentRoom) {
               setRoomid(editData.id_ruangan);
               form.setValue("ruangan", editData.id_ruangan);
@@ -307,9 +277,7 @@ export default function BookFormSingle({
         <Grid container spacing={16}>
           <Grid item xs={12} md={6}>
             {penalty && <Alert severity="error">{penalty}</Alert>}
-            <Box
-              sx={{ display: "flex", flexDirection: "column", gap: 8, py: 24 }}
-            >
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 8, py: 24 }}>
               <DatePickerComp
                 name="dateBook"
                 label="Booking Date"
@@ -318,8 +286,7 @@ export default function BookFormSingle({
                   required: "Field required",
                   validate: {
                     minDate: (value: any) =>
-                      new Date(value).setHours(0, 0, 0, 0) >=
-                        new Date().setHours(0, 0, 0, 0) ||
+                      new Date(value).setHours(0, 0, 0, 0) >= new Date().setHours(0, 0, 0, 0) ||
                       "Booking date can't be in the past",
                     max30Days: (value: any) => {
                       const diffDays = moment(value).diff(moment(), "days");
@@ -351,18 +318,11 @@ export default function BookFormSingle({
                         const now = new Date();
 
                         // If booking date is today, check if time is in the past
-                        if (
-                          selectedDate &&
-                          new Date(selectedDate).setHours(0, 0, 0, 0) ===
-                            now.setHours(0, 0, 0, 0)
-                        ) {
+                        if (selectedDate && new Date(selectedDate).setHours(0, 0, 0, 0) === now.setHours(0, 0, 0, 0)) {
                           const selectedDateTime = new Date(value);
                           const currentTime = new Date();
 
-                          return (
-                            selectedDateTime >= currentTime ||
-                            "Start time can't be in the past"
-                          );
+                          return selectedDateTime >= currentTime || "Start time can't be in the past";
                         }
 
                         return true; // Future dates are always valid
@@ -371,12 +331,8 @@ export default function BookFormSingle({
                   }}
                   onChangeOvr={(value) => {
                     const tempStartTime = value;
-                    const tempHour = moment(endTime).diff(
-                      moment(value),
-                      "hours"
-                    );
-                    const tempMinute =
-                      moment(endTime).diff(moment(value), "minutes") % 60;
+                    const tempHour = moment(endTime).diff(moment(value), "hours");
+                    const tempMinute = moment(endTime).diff(moment(value), "minutes") % 60;
 
                     setStartTime(tempStartTime);
                     setHour(tempHour);
@@ -393,12 +349,8 @@ export default function BookFormSingle({
                   }}
                   onChangeOvr={(value) => {
                     const tempEndTime = value;
-                    const tempHour = moment(value).diff(
-                      moment(startTime),
-                      "hours"
-                    );
-                    const tempMinute =
-                      moment(value).diff(moment(startTime), "minutes") % 60;
+                    const tempHour = moment(value).diff(moment(startTime), "hours");
+                    const tempMinute = moment(value).diff(moment(startTime), "minutes") % 60;
 
                     setEndTime(tempEndTime);
                     setHour(tempHour);
@@ -417,9 +369,7 @@ export default function BookFormSingle({
                     label="Hour"
                     variant="outlined"
                     error={!!formState.errors.hour}
-                    helperText={
-                      formState.errors.hour ? formState.errors.hour.message : ""
-                    }
+                    helperText={formState.errors.hour ? formState.errors.hour.message : ""}
                     {...register("hour", {
                       min: {
                         value: 0,
@@ -434,11 +384,7 @@ export default function BookFormSingle({
                     label="Minute"
                     variant="outlined"
                     error={!!formState.errors.minute}
-                    helperText={
-                      formState.errors.minute
-                        ? formState.errors.minute.message
-                        : ""
-                    }
+                    helperText={formState.errors.minute ? formState.errors.minute.message : ""}
                     {...register("minute", {
                       validate: {
                         minimum: (value: any) => {
@@ -471,18 +417,13 @@ export default function BookFormSingle({
                         return num <= 100 || "Maximum value 100";
                       },
                       isNumber: (value: string) => {
-                        return (
-                          !isNaN(Number(value)) || "Must be a valid number"
-                        );
+                        return !isNaN(Number(value)) || "Must be a valid number";
                       },
                     },
                   }}
                   onChangeOvr={() => setChanged(true)}
                 />
-                <input
-                  {...register("ruangan", { required: "Please input" })}
-                  hidden={true}
-                />
+                <input {...register("ruangan", { required: "Please input" })} hidden={true} />
               </Box>
               <RadioComp
                 name="category"
@@ -491,16 +432,8 @@ export default function BookFormSingle({
                 control={form.control}
                 onChangeOvr={() => setChanged(true)}
               >
-                <FormControlLabel
-                  value="INT"
-                  control={<Radio />}
-                  label="Internal"
-                />
-                <FormControlLabel
-                  value="EXT"
-                  control={<Radio />}
-                  label="External"
-                />
+                <FormControlLabel value="INT" control={<Radio />} label="Internal" />
+                <FormControlLabel value="EXT" control={<Radio />} label="External" />
               </RadioComp>
               <RadioComp
                 name="isVirtual"
@@ -512,22 +445,10 @@ export default function BookFormSingle({
                   setChanged(true);
                 }}
               >
-                <FormControlLabel
-                  value="false"
-                  control={<Radio />}
-                  label="Physical Room"
-                />
-                <FormControlLabel
-                  value="true"
-                  control={<Radio />}
-                  label="Virtual Room (Zoom)"
-                />
+                <FormControlLabel value="false" control={<Radio />} label="Physical Room" />
+                <FormControlLabel value="true" control={<Radio />} label="Virtual Room (Zoom)" />
               </RadioComp>
-              <Button
-                variant="outlined"
-                onClick={() => checkAvail(form.getValues())}
-                disabled={!!penalty}
-              >
+              <Button variant="outlined" onClick={() => checkAvail(form.getValues())} disabled={!!penalty}>
                 Check Available Room
               </Button>
             </Box>
@@ -586,13 +507,7 @@ export default function BookFormSingle({
                     },
                   }}
                 />
-                <TextFieldComp
-                  multiline={true}
-                  rows={5}
-                  control={form.control}
-                  name="remark"
-                  label="Remark"
-                />
+                <TextFieldComp multiline={true} rows={5} control={form.control} name="remark" label="Remark" />
                 {loading ? (
                   <Button type="submit" variant="contained" disabled>
                     Loading...
@@ -602,9 +517,7 @@ export default function BookFormSingle({
                     <ConfirmationDialog
                       title={isEdit ? "Update Booking" : "Submit Book"}
                       desc={
-                        isEdit
-                          ? "Are you sure you want to update this booking?"
-                          : "Are you sure you want to submit?"
+                        isEdit ? "Are you sure you want to update this booking?" : "Are you sure you want to submit?"
                       }
                       action={isEdit ? "Update" : "Submit"}
                       response={handleSubmit(onSubmit)}
@@ -621,11 +534,7 @@ export default function BookFormSingle({
                           variant="contained"
                           disabled={changed}
                         >
-                          {changed
-                            ? "Please check room"
-                            : isEdit
-                            ? "Update Booking"
-                            : "Submit"}
+                          {changed ? "Please check room" : isEdit ? "Update Booking" : "Submit"}
                         </Button>
                       )}
                     </ConfirmationDialog>
@@ -642,10 +551,7 @@ export default function BookFormSingle({
                       gap: 2,
                     }}
                   >
-                    <Typography
-                      variant="h6"
-                      sx={{ color: "primary.main", mb: 2 }}
-                    >
+                    <Typography variant="h6" sx={{ color: "primary.main", mb: 2 }}>
                       Currently Booked Room
                     </Typography>
                     <Box
@@ -716,9 +622,7 @@ export default function BookFormSingle({
                               gap: 1,
                             }}
                           >
-                            <span>
-                              👥 Capacity: {editData.kapasitas} people
-                            </span>
+                            <span>👥 Capacity: {editData.kapasitas} people</span>
                           </Typography>
                         </Box>
                       </Box>
@@ -733,9 +637,8 @@ export default function BookFormSingle({
                         textAlign: "center",
                       }}
                     >
-                      This is your currently booked room. Click &quot;Check
-                      Available Room&quot; below to see other options if you
-                      want to change your room.
+                      This is your currently booked room. Click &quot;Check Available Room&quot; below to see other
+                      options if you want to change your room.
                     </Typography>
                   </Box>
                 ) : (

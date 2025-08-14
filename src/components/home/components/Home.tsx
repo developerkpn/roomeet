@@ -5,15 +5,7 @@ import QRScanner from "@/common/QRScanner";
 import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
 import { useAuthStore } from "@/lib/store/useAuthStore";
 import { QrCodeScanner } from "@mui/icons-material";
-import {
-  Alert,
-  Box,
-  Button,
-  Grid,
-  Skeleton,
-  Tooltip,
-  Typography,
-} from "@mui/material";
+import { Alert, Box, Button, Grid, Skeleton, Tooltip, Typography } from "@mui/material";
 import moment from "moment";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -72,12 +64,13 @@ const Home = () => {
     fallback: { coUrl: [] },
   });
 
-  const handleCheckIn = async (id_user: any, id_book: any) => {
+  const handleCheckIn = async (id_user: any, id_book: any, id_ruangan: any) => {
     try {
       const res = await axiosAuth.patch("/book/checkin", {
         data: {
           id_user: id_user,
           id_book: id_book,
+          room_id: id_ruangan,
         },
       });
       ciMutate();
@@ -88,12 +81,13 @@ const Home = () => {
     }
   };
 
-  const handleCheckOut = async (id_user: any, id_book: any) => {
+  const handleCheckOut = async (id_user: any, id_book: any, id_ruangan: any) => {
     try {
       const res = await axiosAuth.patch("/book/checkout", {
         data: {
           id_user: id_user,
           id_book: id_book,
+          room_id: id_ruangan,
         },
       });
       coMutate();
@@ -112,8 +106,10 @@ const Home = () => {
 
     try {
       const res = await axiosAuth.patch("/book/checkin", {
-        id_user: user.id_user,
-        room_id: room_id,
+        data: {
+          id_user: user.id_user,
+          room_id: room_id,
+        },
       });
       ciMutate();
       coMutate();
@@ -132,8 +128,10 @@ const Home = () => {
 
     try {
       const res = await axiosAuth.patch("/book/checkout", {
-        id_user: user.id_user,
-        room_id: room_id,
+        data: {
+          id_user: user.id_user,
+          room_id: room_id,
+        },
       });
       coMutate();
       bookMutate();
@@ -170,25 +168,13 @@ const Home = () => {
       <DigitalClock />
 
       <Box sx={{ mb: 16 }}>
-        <Typography sx={{ fontWeight: "bold", mb: 16, color: "primary.light" }}>
-          Check In
-        </Typography>
+        <Typography sx={{ fontWeight: "bold", mb: 16, color: "primary.light" }}>Check In</Typography>
 
         {/* QR Scanner Check-in Button */}
         <Box sx={{ mb: 2 }}>
-          <QRScanner
-            onScan={handleQRCheckIn}
-            title="Check In with QR Code"
-            actionText="Check In"
-          >
+          <QRScanner onScan={handleQRCheckIn} title="Check In with QR Code" actionText="Check In">
             {(showScanner) => (
-              <Button
-                variant="outlined"
-                startIcon={<QrCodeScanner />}
-                onClick={showScanner}
-                fullWidth
-                sx={{ mb: 2 }}
-              >
+              <Button variant="outlined" startIcon={<QrCodeScanner />} onClick={showScanner} fullWidth sx={{ mb: 2 }}>
                 Scan QR to Check In
               </Button>
             )}
@@ -199,74 +185,76 @@ const Home = () => {
           checkin?.data.length !== 0 ? (
             <Grid container spacing={16}>
               {/* Loading finished and data exist */}
-              {checkin?.data.map((ci: any) => (
-                <Grid item xs={12} sm={6} key={ci.id_book}>
-                  <Box
-                    sx={{
-                      px: 24,
-                      py: 16,
-                      backgroundColor: "background.card",
-                      mt: 16,
-                      borderRadius: 4,
-                    }}
-                  >
-                    <Typography variant="h2">{ci.agenda}</Typography>
-                    <Typography variant="h3">{ci.id_ruangan}</Typography>
-                    <Typography variant="h3" sx={{ fontWeight: "regular" }}>
-                      {`${ci.time_start} - ${ci.time_end} | ${moment(
-                        ci.book_date
-                      ).format("DD/MM/YYYY")}`}
-                    </Typography>
-                    <ConfirmationDialog
-                      title="Confirm Check In"
-                      desc="Are you sure you want to check in?"
-                      action="Check In"
-                      response={() => handleCheckIn(user?.id_user, ci.id_book)}
-                      type="button"
+              {checkin?.data.map((ci: any) => {
+                console.log("Checkin item:", ci);
+                console.log("is_virtual value:", ci.is_virtual);
+                console.log("is_virtual === 'T':", ci.is_virtual === "T");
+                return (
+                  <Grid item xs={12} sm={6} key={ci.id_book}>
+                    <Box
+                      sx={{
+                        px: 24,
+                        py: 16,
+                        backgroundColor: "background.card",
+                        mt: 16,
+                        borderRadius: 4,
+                      }}
                     >
-                      {(showDialog: any) => (
-                        <Button
-                          variant="contained"
-                          fullWidth
-                          onClick={showDialog}
+                      <Typography variant="h2">{ci.agenda}</Typography>
+                      <Typography variant="h3">{ci.id_ruangan}</Typography>
+                      <Typography variant="h3" sx={{ fontWeight: "regular" }}>
+                        {`${ci.time_start} - ${ci.time_end} | ${moment(ci.book_date).format("DD/MM/YYYY")}`}
+                      </Typography>
+                      {/* Only show check-in button for virtual rooms */}
+                      {ci.is_virtual === "T" && (
+                        <ConfirmationDialog
+                          title="Confirm Check In"
+                          desc="Are you sure you want to check in?"
+                          action="Check In"
+                          response={() => handleCheckIn(user?.id_user, ci.id_book, ci.id_ruangan)}
+                          type="button"
                         >
-                          Check In
-                        </Button>
+                          {(showDialog: any) => (
+                            <Button variant="contained" fullWidth onClick={showDialog}>
+                              Check In
+                            </Button>
+                          )}
+                        </ConfirmationDialog>
                       )}
-                    </ConfirmationDialog>
-                  </Box>
-                </Grid>
-              ))}
+                      {/* Show guidance for physical rooms */}
+                      {ci.is_virtual !== "T" && (
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: "primary.light",
+                            py: 1,
+                            fontSize: "0.875rem",
+                          }}
+                        >
+                          Use QR scanner above to check in
+                        </Typography>
+                      )}
+                    </Box>
+                  </Grid>
+                );
+              })}
             </Grid>
           ) : (
             // Loading finished and data dont exist
-            <Typography sx={{ color: "grey.500" }}>
-              No upcoming meeting
-            </Typography>
+            <Typography sx={{ color: "grey.500" }}>No upcoming meeting</Typography>
           )
         ) : (
           // Loading UI
-          <Skeleton
-            variant="rounded"
-            width="100%"
-            height={64}
-            sx={{ bgcolor: "grey.700" }}
-          />
+          <Skeleton variant="rounded" width="100%" height={64} sx={{ bgcolor: "grey.700" }} />
         )}
       </Box>
 
       <Box sx={{ mb: 16 }}>
-        <Typography sx={{ fontWeight: "bold", my: 16, color: "primary.light" }}>
-          Check Out
-        </Typography>
+        <Typography sx={{ fontWeight: "bold", my: 16, color: "primary.light" }}>Check Out</Typography>
 
         {/* QR Scanner Check-out Button */}
         <Box sx={{ mb: 2 }}>
-          <QRScanner
-            onScan={handleQRCheckOut}
-            title="Check Out with QR Code"
-            actionText="Check Out"
-          >
+          <QRScanner onScan={handleQRCheckOut} title="Check Out with QR Code" actionText="Check Out">
             {(showScanner) => (
               <Button
                 variant="outlined"
@@ -285,67 +273,72 @@ const Home = () => {
         {checkout ? (
           checkout?.data.length !== 0 ? (
             <Grid container spacing={16}>
-              {checkout?.data.map((co: any) => (
-                <Grid item xs={12} sm={6} key={co.id_book}>
-                  <Box
-                    sx={{
-                      px: 24,
-                      py: 16,
-                      backgroundColor: "background.card",
-                      mt: 16,
-                      borderRadius: 4,
-                    }}
-                  >
-                    <Typography variant="h2">{co.agenda}</Typography>
-                    <Typography variant="h3">{co.id_ruangan}</Typography>
-                    <Typography variant="h3" sx={{ fontWeight: "regular" }}>
-                      {`${co.time_start} - ${co.time_end} | ${moment(
-                        co.book_date
-                      ).format("DD/MM/YYYY")}`}
-                    </Typography>
-                    <ConfirmationDialog
-                      title="Confirm Check Out"
-                      desc="Are you sure you want to check out?"
-                      action="Check Out"
-                      response={() => handleCheckOut(user?.id_user, co.id_book)}
-                      type="button"
-                      color="error"
+              {checkout?.data.map((co: any) => {
+                console.log("Checkout item:", co);
+                console.log("is_virtual value:", co.is_virtual);
+                console.log("is_virtual === 'T':", co.is_virtual === "T");
+                return (
+                  <Grid item xs={12} sm={6} key={co.id_book}>
+                    <Box
+                      sx={{
+                        px: 24,
+                        py: 16,
+                        backgroundColor: "background.card",
+                        mt: 16,
+                        borderRadius: 4,
+                      }}
                     >
-                      {(showDialog: any) => (
-                        <Button
+                      <Typography variant="h2">{co.agenda}</Typography>
+                      <Typography variant="h3">{co.id_ruangan}</Typography>
+                      <Typography variant="h3" sx={{ fontWeight: "regular" }}>
+                        {`${co.time_start} - ${co.time_end} | ${moment(co.book_date).format("DD/MM/YYYY")}`}
+                      </Typography>
+                      {/* Only show check-out button for virtual rooms */}
+                      {co.is_virtual === "T" && (
+                        <ConfirmationDialog
+                          title="Confirm Check Out"
+                          desc="Are you sure you want to check out?"
+                          action="Check Out"
+                          response={() => handleCheckOut(user?.id_user, co.id_book, co.id_ruangan)}
+                          type="button"
                           color="error"
-                          variant="contained"
-                          fullWidth
-                          onClick={showDialog}
                         >
-                          Check Out
-                        </Button>
+                          {(showDialog: any) => (
+                            <Button color="error" variant="contained" fullWidth onClick={showDialog}>
+                              Check Out
+                            </Button>
+                          )}
+                        </ConfirmationDialog>
                       )}
-                    </ConfirmationDialog>
-                  </Box>
-                </Grid>
-              ))}
+                      {/* Show guidance for physical rooms */}
+                      {co.is_virtual !== "T" && (
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: "primary.light",
+                            py: 1,
+                            fontSize: "0.875rem",
+                          }}
+                        >
+                          Use QR scanner above to check out
+                        </Typography>
+                      )}
+                    </Box>
+                  </Grid>
+                );
+              })}
             </Grid>
           ) : (
-            <Typography sx={{ color: "grey.500" }}>
-              Please check in first
-            </Typography>
+            <Typography sx={{ color: "grey.500" }}>Please check in first</Typography>
           )
         ) : (
           // Loading UI
-          <Skeleton
-            variant="rounded"
-            width="100%"
-            height={64}
-            sx={{ bgcolor: "grey.700" }}
-          />
+          <Skeleton variant="rounded" width="100%" height={64} sx={{ bgcolor: "grey.700" }} />
         )}
       </Box>
 
       <Box sx={{ mb: 16 }}>
-        <Typography sx={{ fontWeight: "bold", my: 16, color: "primary.light" }}>
-          Nearest Meeting
-        </Typography>
+        <Typography sx={{ fontWeight: "bold", my: 16, color: "primary.light" }}>Nearest Meeting</Typography>
         {books ? (
           books?.data.length !== 0 ? (
             <Grid container spacing={16}>
@@ -365,9 +358,7 @@ const Home = () => {
                         <Typography variant="h2">{book.agenda}</Typography>
                         <Typography variant="h3">{book.id_room}</Typography>
                         <Typography variant="h4" sx={{ fontWeight: "regular" }}>
-                          {`${book.time_start} - ${book.time_end} | ${moment(
-                            book.book_date
-                          ).format("DD/MM/YYYY")}`}
+                          {`${book.time_start} - ${book.time_end} | ${moment(book.book_date).format("DD/MM/YYYY")}`}
                         </Typography>
                       </Grid>
                       <Grid item xs={4}>
@@ -406,12 +397,7 @@ const Home = () => {
           )
         ) : (
           // Loading UI
-          <Skeleton
-            variant="rounded"
-            width="100%"
-            height={64}
-            sx={{ bgcolor: "grey.700" }}
-          />
+          <Skeleton variant="rounded" width="100%" height={64} sx={{ bgcolor: "grey.700" }} />
         )}
       </Box>
     </Box>
