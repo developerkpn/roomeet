@@ -1,7 +1,7 @@
 import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
 import useFetch from "@/lib/hooks/useFetch";
 import { useAuthStore } from "@/lib/store/useAuthStore";
-import { ContentCopy, Download, QrCode2 } from "@mui/icons-material";
+import { ContentCopy, Download, Edit, QrCode2 } from "@mui/icons-material";
 import {
   Alert,
   Box,
@@ -24,13 +24,14 @@ import {
   useTheme,
 } from "@mui/material";
 import Image from "next/image";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import useSWR, { mutate } from "swr";
 import BigCalendar from "./BigCalendar";
 
 const Room = () => {
   const { idroom } = useParams();
+  const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const [rooms, setRooms] = useState<any>();
   const [room, setRoom] = useState<any>(idroom ? idroom[0] : "");
@@ -717,8 +718,26 @@ const Room = () => {
                   xs: 4,
                   md: 6,
                 },
+                display: "flex",
+                gap: 10,
+                flexWrap: "wrap",
               }}
             >
+              <Button
+                variant="outlined"
+                startIcon={<Edit />}
+                size={isMobile ? "small" : "medium"}
+                sx={{
+                  mt: 2,
+                  fontSize: {
+                    xs: "0.75rem",
+                    sm: "0.875rem",
+                  },
+                }}
+                onClick={() => router.push(`/admin/room/edit/${room}`)}
+              >
+                Edit Room
+              </Button>
               <Button
                 color="error"
                 variant="contained"
