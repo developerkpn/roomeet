@@ -1,6 +1,7 @@
 import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
 import useFetch from "@/lib/hooks/useFetch";
-import { ContentCopy, Download, QrCode2 } from "@mui/icons-material";
+import { useAuthStore } from "@/lib/store/useAuthStore";
+import { ContentCopy, Download, Edit, QrCode2 } from "@mui/icons-material";
 import {
   Alert,
   Box,
@@ -23,14 +24,14 @@ import {
   useTheme,
 } from "@mui/material";
 import Image from "next/image";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import useSWR, { mutate } from "swr";
 import BigCalendar from "./BigCalendar";
-import { useAuthStore } from "@/lib/store/useAuthStore";
 
 const Room = () => {
   const { idroom } = useParams();
+  const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const [rooms, setRooms] = useState<any>();
   const [room, setRoom] = useState<any>(idroom ? idroom[0] : "");
@@ -376,7 +377,7 @@ const Room = () => {
             )}
             {/* QR Code Container - only for physical rooms */}
             {roomDetails.data[0].is_virtual !== "T" && user?.role_name == "admin" && (
-              <Grid item xs={12} md={4}>
+              <Grid item xs={8} md={4} sx={{ mx: { xs: "auto", md: 0 } }}>
                 <Box>
                   <Typography variant="h6" sx={{ mb: 1, color: "primary.main" }}>
                     QR Code for Check-in
@@ -435,6 +436,27 @@ const Room = () => {
                       </Box>
                     )}
                   </Box>
+                  {/* Download QR Button - positioned below QR container */}
+                  {qrCodeExists && user?.role_name == "admin" && (
+                    <Box sx={{ mt: 2 }}>
+                      <Button
+                        variant="contained"
+                        startIcon={<Download />}
+                        onClick={() => downloadQRCodeWithTemplate(room, roomDetails.data[0].nama)}
+                        size={isMobile ? "small" : "medium"}
+                        disabled={downloadLoading}
+                        sx={{
+                          width: "100%",
+                          fontSize: {
+                            xs: "0.75rem",
+                            sm: "0.875rem",
+                          },
+                        }}
+                      >
+                        {downloadLoading ? "Preparing..." : "Download QR"}
+                      </Button>
+                    </Box>
+                  )}
                 </Box>
               </Grid>
             )}
@@ -568,12 +590,13 @@ const Room = () => {
                   )}
                 </Box>
               )}
+              {/* Location, Capacity, and Facilities Section */}
               <Box
                 sx={{
                   display: "flex",
                   gap: {
-                    xs: 16,
-                    md: 32,
+                    xs: 20,
+                    md: 40,
                   },
                   my: {
                     xs: 2,
@@ -604,6 +627,17 @@ const Room = () => {
                   >
                     Capacity:
                   </Typography>
+                  <Typography
+                    sx={{
+                      fontSize: {
+                        xs: "0.875rem",
+                        sm: "1rem",
+                      },
+                      fontWeight: 500,
+                    }}
+                  >
+                    Facilities:
+                  </Typography>
                   {roomDetails.data[0].is_virtual === "T" && (
                     <Typography
                       sx={{
@@ -625,6 +659,7 @@ const Room = () => {
                         xs: "0.875rem",
                         sm: "1rem",
                       },
+                      whiteSpace: "nowrap",
                     }}
                   >
                     {roomDetails.data[0].lokasi}
@@ -635,9 +670,23 @@ const Room = () => {
                         xs: "0.875rem",
                         sm: "1rem",
                       },
+                      whiteSpace: "nowrap",
                     }}
                   >
                     {roomDetails.data[0].kapasitas} participants
+                  </Typography>
+                  <Typography
+                    sx={{
+                      fontSize: {
+                        xs: "0.875rem",
+                        sm: "1rem",
+                      },
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {roomDetails.data[0].fasilitas && roomDetails.data[0].fasilitas.length > 0
+                      ? roomDetails.data[0].fasilitas.join(", ")
+                      : "-"}
                   </Typography>
                   {roomDetails.data[0].is_virtual === "T" && (
                     <Typography
@@ -648,51 +697,13 @@ const Room = () => {
                         },
                         color: "primary.main",
                         fontWeight: 500,
+                        whiteSpace: "nowrap",
                       }}
                     >
                       Virtual Room (Zoom)
                     </Typography>
                   )}
                 </Box>
-              </Box>
-              <Box
-                sx={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: {
-                    xs: 4,
-                    sm: 8,
-                  },
-                  mt: {
-                    xs: 2,
-                    md: 16,
-                  },
-                }}
-              >
-                {roomDetails.data[0].fasilitas.map((item: string, idx: string) => (
-                  <Box
-                    sx={{
-                      backgroundColor: "primary.main",
-                      color: "#fafafa",
-                      px: {
-                        xs: 6,
-                        sm: 10,
-                      },
-                      py: {
-                        xs: 2,
-                        sm: 4,
-                      },
-                      borderRadius: 2,
-                      fontSize: {
-                        xs: "0.75rem",
-                        sm: "0.875rem",
-                      },
-                    }}
-                    key={idx + item}
-                  >
-                    {item}
-                  </Box>
-                ))}
               </Box>
             </Grid>
           </Grid>
@@ -703,8 +714,30 @@ const Room = () => {
                   xs: 1,
                   sm: 0,
                 },
+                mt: {
+                  xs: 4,
+                  md: 6,
+                },
+                display: "flex",
+                gap: 10,
+                flexWrap: "wrap",
               }}
             >
+              <Button
+                variant="outlined"
+                startIcon={<Edit />}
+                size={isMobile ? "small" : "medium"}
+                sx={{
+                  mt: 2,
+                  fontSize: {
+                    xs: "0.75rem",
+                    sm: "0.875rem",
+                  },
+                }}
+                onClick={() => router.push(`/admin/room/edit/${room}`)}
+              >
+                Edit Room
+              </Button>
               <Button
                 color="error"
                 variant="contained"
@@ -720,24 +753,6 @@ const Room = () => {
               >
                 Delete Room
               </Button>
-              {/* Download QR Button - on the right, only for physical rooms with existing QR */}
-              {roomDetails.data[0].is_virtual !== "T" && qrCodeExists && (
-                <Button
-                  variant="contained"
-                  startIcon={<Download />}
-                  onClick={() => downloadQRCodeWithTemplate(room, roomDetails.data[0].nama)}
-                  size={isMobile ? "small" : "medium"}
-                  disabled={downloadLoading}
-                  sx={{
-                    fontSize: {
-                      xs: "0.75rem",
-                      sm: "0.875rem",
-                    },
-                  }}
-                >
-                  {downloadLoading ? "Preparing..." : "Download QR"}
-                </Button>
-              )}
             </Box>
           )}
           <Dialog

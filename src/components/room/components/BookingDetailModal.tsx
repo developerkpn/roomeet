@@ -164,7 +164,7 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
             color: "white",
           }}
         >
-          Detail Booking
+          Booking Details
         </Typography>
         <IconButton
           edge="end"
@@ -254,7 +254,7 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
                     color: "white",
                   }}
                 >
-                  Tanggal:
+                  Date:
                 </Typography>
                 <Typography
                   variant="body2"
@@ -285,7 +285,7 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
                     color: "white",
                   }}
                 >
-                  Waktu:
+                  Time:
                 </Typography>
                 <Typography
                   variant="body2"
@@ -317,7 +317,7 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
                     color: "white",
                   }}
                 >
-                  Penyelenggara:
+                  Organizer:
                 </Typography>
                 <Typography
                   variant="body2"
@@ -348,7 +348,7 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
                     color: "white",
                   }}
                 >
-                  Jumlah Peserta:
+                  Participants:
                 </Typography>
                 <Typography
                   variant="body2"
@@ -360,7 +360,7 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
                     color: "rgba(255, 255, 255, 0.9)",
                   }}
                 >
-                  {event.resource.participants} orang
+                  {event.resource.participants} people
                 </Typography>
               </Box>
             </Grid>
@@ -380,7 +380,7 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
                     color: "white",
                   }}
                 >
-                  Ruangan:
+                  Room ID:
                 </Typography>
                 <Typography
                   variant="body2"
@@ -411,7 +411,7 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
                     color: "white",
                   }}
                 >
-                  Kategori:
+                  Category:
                 </Typography>
                 <Typography
                   variant="body2"
@@ -444,7 +444,7 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
                       color: "white",
                     }}
                   >
-                    Catatan:
+                    Remarks:
                   </Typography>
                   <Typography
                     variant="body2"
@@ -508,7 +508,7 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
               },
             }}
           >
-            Batalkan Booking
+            Cancel Booking
           </Button>
         )}
 
@@ -526,7 +526,7 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
             },
           }}
         >
-          Tutup
+          Close
         </Button>
       </DialogActions>
 
@@ -554,7 +554,7 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
             borderColor: "rgba(255, 255, 255, 0.1)",
           }}
         >
-          Batalkan Booking
+          Cancel Booking
         </DialogTitle>
         <DialogContent
           sx={{
@@ -570,16 +570,16 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
               fontWeight: 500,
             }}
           >
-            Apakah Anda yakin ingin membatalkan booking ini?
+            Are you sure you want to cancel this booking?
           </Typography>
           <TextField
             fullWidth
             multiline
             rows={3}
-            label="Alasan Pembatalan (Opsional)"
+            label="Cancellation Reason (Optional)"
             value={cancelReason}
             onChange={(e) => setCancelReason(e.target.value)}
-            placeholder="Masukkan alasan pembatalan..."
+            placeholder="Enter cancellation reason..."
             sx={{
               mt: 5,
               "& .MuiInputBase-root": {
@@ -628,7 +628,7 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
               },
             }}
           >
-            Keluar
+            Close
           </Button>
           <Button
             onClick={handleCancelBooking}
@@ -637,7 +637,7 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({
             fullWidth={isMobile}
             disabled={cancelling}
           >
-            {cancelling ? "Membatalkan..." : "Ya, Batalkan"}
+            {cancelling ? "Cancelling..." : "Yes, Cancel"}
           </Button>
         </DialogActions>
       </Dialog>

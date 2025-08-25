@@ -1,10 +1,8 @@
-import { Badge, Box, Button, Typography, Chip } from "@mui/material";
 import { CheckBadgeIcon } from "@heroicons/react/24/outline";
 import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
 import PlaceIcon from "@mui/icons-material/Place";
 import VideoCallIcon from "@mui/icons-material/VideoCall";
-import useSWR from "swr";
-import { CardsBookSkeleton } from "@/common/skeletons/CardSkeleton";
+import { Badge, Box, Button, Chip, Typography } from "@mui/material";
 import Image from "next/image";
 
 interface RoomInfo {
@@ -40,7 +38,6 @@ interface CardProp {
   clickCard: (id: string) => void;
   error: boolean;
 }
-
 
 export const CardRoom = ({ roomInfo, selectedId, clickCard, error }: CardProp) => {
   function onClickCard(id: string) {
@@ -105,32 +102,34 @@ export const CardRoom = ({ roomInfo, selectedId, clickCard, error }: CardProp) =
             height={160}
           />
         </Box>
-        
+
         {/* Content Section - Fixed Height with Flex Layout */}
-        <Box 
-          sx={{ 
-            px: 16, 
-            py: 8, 
-            textAlign: "left", 
+        <Box
+          sx={{
+            px: 16,
+            py: 8,
+            textAlign: "left",
             height: "160px", // Reduced content height
             display: "flex",
             flexDirection: "column",
             justifyContent: "space-between",
-            width: "100%"
+            width: "100%",
           }}
         >
           {/* Header Section with Name and Badge */}
-          <Box sx={{ 
-            display: "flex", 
-            justifyContent: "space-between", 
-            alignItems: "flex-start", 
-            mb: 2,
-            minHeight: "32px", // Reduced header height
-            gap: 2 // Add gap between name and badge
-          }}>
-            <Typography 
-              variant="h3" 
-              sx={{ 
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "flex-start",
+              mb: 2,
+              minHeight: "32px", // Reduced header height
+              gap: 2, // Add gap between name and badge
+            }}
+          >
+            <Typography
+              variant="h3"
+              sx={{
                 fontWeight: "bold",
                 flex: 1,
                 mr: 1, // Add margin to create space before badge
@@ -139,7 +138,7 @@ export const CardRoom = ({ roomInfo, selectedId, clickCard, error }: CardProp) =
                 display: "-webkit-box",
                 WebkitLineClamp: 2,
                 WebkitBoxOrient: "vertical",
-                lineHeight: 1.2
+                lineHeight: 1.2,
               }}
             >
               {roomInfo.name}
@@ -155,7 +154,7 @@ export const CardRoom = ({ roomInfo, selectedId, clickCard, error }: CardProp) =
               />
             )}
           </Box>
-          
+
           {/* Room Details Section */}
           <Box sx={{ flex: 1, display: "flex", flexDirection: "column", gap: 1 }}>
             <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
@@ -164,58 +163,17 @@ export const CardRoom = ({ roomInfo, selectedId, clickCard, error }: CardProp) =
             </Box>
             <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
               <PlaceIcon fontSize="small" />
-              <Typography 
+              <Typography
                 variant="body2"
                 sx={{
                   overflow: "hidden",
                   textOverflow: "ellipsis",
-                  whiteSpace: "nowrap"
+                  whiteSpace: "nowrap",
                 }}
               >
                 {roomInfo.isVirtual ? "Online" : roomInfo.location}
               </Typography>
             </Box>
-          </Box>
-          
-          {/* Facilities Section - Fixed Height */}
-          <Box sx={{ 
-            display: "flex", 
-            flexWrap: "wrap", 
-            gap: 1, 
-            pt: 2,
-            minHeight: "40px", // Reduced height for facilities
-            alignContent: "flex-start"
-          }}>
-            {roomInfo.facility.slice(0, 4).map((item, idx) => ( // Limit to 4 facilities
-              <Box
-                sx={{
-                  backgroundColor: "grey.900",
-                  color: "#fafafa",
-                  px: 2,
-                  py: 1,
-                  borderRadius: 1,
-                  fontSize: "0.75rem",
-                  flexShrink: 0
-                }}
-                key={idx + item}
-              >
-                {item.length > 8 ? item.substring(0, 8) + "..." : item}
-              </Box>
-            ))}
-            {roomInfo.facility.length > 4 && (
-              <Box
-                sx={{
-                  backgroundColor: "grey.600",
-                  color: "#fafafa",
-                  px: 2,
-                  py: 1,
-                  borderRadius: 1,
-                  fontSize: "0.75rem",
-                }}
-              >
-                +{roomInfo.facility.length - 4}
-              </Box>
-            )}
           </Box>
         </Box>
       </Button>
@@ -234,91 +192,71 @@ export const CardRooms = ({
   filterId?: any;
   errorData: boolean;
 }) => {
-  const {
-    data: rooms,
-    error,
-    isLoading,
-  } = useSWR("/room/fas", { suspense: true, fallback: { "/room/fas": [] } });
-  console.log(filterId);
-
-  const roomData: Array<RoomInfo> = rooms?.data
-    ?.sort((a: any, b: any) => a.kapasitas - b.kapasitas)
-    .filter((item: RoomData) =>
-      filterId ? filterId.some((fid: any) => fid.id_ruangan === item.id_ruangan) : true
-    )
-    .slice(0, 3)
-    .map((item: RoomData) => {
-      return {
-        id: item.id_ruangan,
-        name: item.nama,
-        capacity: item.kapasitas,
-        location: item.lokasi,
-        facility: item.fasilitas,
-        image: item.image,
-        isVirtual: item.is_virtual === 'T',
-        zoomLink: item.zoom_link,
-        zoomMeetingId: item.zoom_meeting_id,
-        zoomPasscode: item.zoom_passcode,
-      };
-    });
+  const roomData: Array<RoomInfo> =
+    filterId
+      ?.sort((a: any, b: any) => a.kapasitas - b.kapasitas)
+      .map((item: RoomData) => {
+        return {
+          id: item.id_ruangan,
+          name: item.nama,
+          capacity: item.kapasitas,
+          location: item.lokasi,
+          facility: item.fasilitas || [],
+          image: item.image,
+          isVirtual: item.is_virtual === "T",
+          zoomLink: item.zoom_link,
+          zoomMeetingId: item.zoom_meeting_id,
+          zoomPasscode: item.zoom_passcode,
+        };
+      }) || [];
 
   return (
-    <>
-      {!isLoading && (
+    <Box
+      sx={{
+        display: "flex",
+        overflowX: "auto",
+        gap: 2,
+        py: 2,
+        px: 1,
+        // Enable smooth scrolling
+        scrollBehavior: "smooth",
+        // Hide scrollbar on webkit browsers (Safari, Chrome)
+        "&::-webkit-scrollbar": {
+          height: 8,
+        },
+        "&::-webkit-scrollbar-track": {
+          backgroundColor: "grey.200",
+          borderRadius: 1,
+        },
+        "&::-webkit-scrollbar-thumb": {
+          backgroundColor: "grey.400",
+          borderRadius: 1,
+          "&:hover": {
+            backgroundColor: "grey.500",
+          },
+        },
+        // For Firefox
+        scrollbarWidth: "thin",
+        scrollbarColor: "rgba(0,0,0,0.3) rgba(0,0,0,0.1)",
+      }}
+    >
+      {roomData?.map((item) => (
         <Box
+          key={item.id}
           sx={{
+            minWidth: "320px", // Slightly increased width for better spacing
+            maxWidth: "320px",
+            height: "320px", // Reduced height to match new card height + badge space
+            pt: 18,
+            pb: 16,
+            pr: 16,
             display: "flex",
-            overflowX: "auto",
-            gap: 2,
-            py: 2,
-            px: 1,
-            // Enable smooth scrolling
-            scrollBehavior: "smooth",
-            // Hide scrollbar on webkit browsers (Safari, Chrome)
-            "&::-webkit-scrollbar": {
-              height: 8,
-            },
-            "&::-webkit-scrollbar-track": {
-              backgroundColor: "grey.200",
-              borderRadius: 1,
-            },
-            "&::-webkit-scrollbar-thumb": {
-              backgroundColor: "grey.400",
-              borderRadius: 1,
-              "&:hover": {
-                backgroundColor: "grey.500",
-              },
-            },
-            // For Firefox
-            scrollbarWidth: "thin",
-            scrollbarColor: "rgba(0,0,0,0.3) rgba(0,0,0,0.1)",
+            alignItems: "stretch", // Ensures cards stretch to full height
           }}
         >
-          {roomData?.map((item) => (
-            <Box 
-              key={item.id} 
-              sx={{ 
-                minWidth: "320px", // Slightly increased width for better spacing
-                maxWidth: "320px",
-                height: "320px", // Reduced height to match new card height + badge space
-                pt: 18, 
-                pb: 16, 
-                pr: 16,
-                display: "flex",
-                alignItems: "stretch" // Ensures cards stretch to full height
-              }}
-            >
-              <CardRoom
-                roomInfo={item}
-                selectedId={selectedId}
-                clickCard={clickCard}
-                error={errorData}
-              />
-            </Box>
-          ))}
+          <CardRoom roomInfo={item} selectedId={selectedId} clickCard={clickCard} error={errorData} />
         </Box>
-      )}
-      {isLoading && <CardsBookSkeleton />}
-    </>
+      ))}
+    </Box>
   );
 };
