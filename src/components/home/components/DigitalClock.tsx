@@ -22,7 +22,7 @@ export default function DigitalClock() {
     return () => {
       clearInterval(dateSet);
     };
-  }, [hour, minute, second]);
+  }, [hour, minute, second, rightNow]);
 
   return (
     <Box sx={{ my: 16 }}>

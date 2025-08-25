@@ -15,6 +15,7 @@ interface TextFieldProp {
   numericInput?: boolean;
   multiline?: boolean;
   rows?: number;
+  placeholder?: string;
 }
 
 export const TextFieldComp = ({
@@ -30,6 +31,7 @@ export const TextFieldComp = ({
   numericInput,
   multiline,
   rows,
+  placeholder,
 }: TextFieldProp) => {
   return (
     <>
@@ -38,10 +40,7 @@ export const TextFieldComp = ({
         control={control}
         rules={rules}
         defaultValue={valueovr}
-        render={({
-          field: { onChange, value, ref },
-          fieldState: { error },
-        }) => (
+        render={({ field: { onChange, value, ref }, fieldState: { error } }) => (
           <TextField
             helperText={error ? error.message : null}
             error={!!error}
@@ -69,6 +68,7 @@ export const TextFieldComp = ({
               readOnly: readOnly,
               inputMode: numericInput ? "numeric" : "text",
             }}
+            placeholder={placeholder}
             fullWidth
           />
         )}
