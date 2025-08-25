@@ -170,16 +170,18 @@ const Home = () => {
       <Box sx={{ mb: 16 }}>
         <Typography sx={{ fontWeight: "bold", mb: 16, color: "primary.light" }}>Check In</Typography>
 
-        {/* QR Scanner Check-in Button */}
-        <Box sx={{ mb: 2 }}>
-          <QRScanner onScan={handleQRCheckIn} title="Check In with QR Code" actionText="Check In">
-            {(showScanner) => (
-              <Button variant="outlined" startIcon={<QrCodeScanner />} onClick={showScanner} fullWidth sx={{ mb: 2 }}>
-                Scan QR to Check In
-              </Button>
-            )}
-          </QRScanner>
-        </Box>
+        {/* QR Scanner Check-in Button - Only show if there are check-ins available */}
+        {checkin?.data?.length > 0 && (
+          <Box sx={{ mb: 2 }}>
+            <QRScanner onScan={handleQRCheckIn} title="Check In with QR Code" actionText="Check In">
+              {(showScanner) => (
+                <Button variant="outlined" startIcon={<QrCodeScanner />} onClick={showScanner} fullWidth sx={{ mb: 2 }}>
+                  Scan QR to Check In
+                </Button>
+              )}
+            </QRScanner>
+          </Box>
+        )}
 
         {checkin ? (
           checkin?.data.length !== 0 ? (
@@ -252,23 +254,25 @@ const Home = () => {
       <Box sx={{ mb: 16 }}>
         <Typography sx={{ fontWeight: "bold", my: 16, color: "primary.light" }}>Check Out</Typography>
 
-        {/* QR Scanner Check-out Button */}
-        <Box sx={{ mb: 2 }}>
-          <QRScanner onScan={handleQRCheckOut} title="Check Out with QR Code" actionText="Check Out">
-            {(showScanner) => (
-              <Button
-                variant="outlined"
-                startIcon={<QrCodeScanner />}
-                onClick={showScanner}
-                fullWidth
-                sx={{ mb: 2 }}
-                color="error"
-              >
-                Scan QR to Check Out
-              </Button>
-            )}
-          </QRScanner>
-        </Box>
+        {/* QR Scanner Check-out Button - Only show if there are check-outs available */}
+        {checkout?.data?.length > 0 && (
+          <Box sx={{ mb: 2 }}>
+            <QRScanner onScan={handleQRCheckOut} title="Check Out with QR Code" actionText="Check Out">
+              {(showScanner) => (
+                <Button
+                  variant="outlined"
+                  startIcon={<QrCodeScanner />}
+                  onClick={showScanner}
+                  fullWidth
+                  sx={{ mb: 2 }}
+                  color="error"
+                >
+                  Scan QR to Check Out
+                </Button>
+              )}
+            </QRScanner>
+          </Box>
+        )}
 
         {checkout ? (
           checkout?.data.length !== 0 ? (

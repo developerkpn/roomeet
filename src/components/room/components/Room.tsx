@@ -589,16 +589,13 @@ const Room = () => {
                   )}
                 </Box>
               )}
+              {/* Location, Capacity, and Facilities Section */}
               <Box
                 sx={{
                   display: "flex",
-                  flexDirection: {
-                    xs: "column",
-                    md: "row",
-                  },
                   gap: {
-                    xs: 3,
-                    md: 6,
+                    xs: 20,
+                    md: 40,
                   },
                   my: {
                     xs: 2,
@@ -606,117 +603,7 @@ const Room = () => {
                   },
                 }}
               >
-                {/* Location and Capacity Section */}
-                <Box
-                  sx={{
-                    display: "flex",
-                    gap: {
-                      xs: 20,
-                      md: 40,
-                    },
-                    minWidth: {
-                      xs: "auto",
-                      md: "280px",
-                    },
-                  }}
-                >
-                  <Box>
-                    <Typography
-                      sx={{
-                        fontSize: {
-                          xs: "0.875rem",
-                          sm: "1rem",
-                        },
-                        fontWeight: 500,
-                      }}
-                    >
-                      Location:
-                    </Typography>
-                    <Typography
-                      sx={{
-                        fontSize: {
-                          xs: "0.875rem",
-                          sm: "1rem",
-                        },
-                        fontWeight: 500,
-                      }}
-                    >
-                      Capacity:
-                    </Typography>
-                    {roomDetails.data[0].is_virtual === "T" && (
-                      <Typography
-                        sx={{
-                          fontSize: {
-                            xs: "0.875rem",
-                            sm: "1rem",
-                          },
-                          fontWeight: 500,
-                        }}
-                      >
-                        Type:
-                      </Typography>
-                    )}
-                  </Box>
-                  <Box>
-                    <Typography
-                      sx={{
-                        fontSize: {
-                          xs: "0.875rem",
-                          sm: "1rem",
-                        },
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {roomDetails.data[0].lokasi}
-                    </Typography>
-                    <Typography
-                      sx={{
-                        fontSize: {
-                          xs: "0.875rem",
-                          sm: "1rem",
-                        },
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {roomDetails.data[0].kapasitas} participants
-                    </Typography>
-                    {roomDetails.data[0].is_virtual === "T" && (
-                      <Typography
-                        sx={{
-                          fontSize: {
-                            xs: "0.875rem",
-                            sm: "1rem",
-                          },
-                          color: "primary.main",
-                          fontWeight: 500,
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        Virtual Room (Zoom)
-                      </Typography>
-                    )}
-                  </Box>
-                </Box>
-
-                {/* Vertical Separator - only on desktop */}
-                <Box
-                  sx={{
-                    display: {
-                      xs: "none",
-                      md: "block",
-                    },
-                    width: "1px",
-                    backgroundColor: "divider",
-                    mx: 2,
-                  }}
-                />
-
-                {/* Facilities Section - Now horizontally aligned */}
-                <Box
-                  sx={{
-                    flex: 1,
-                  }}
-                >
+                <Box>
                   <Typography
                     sx={{
                       fontSize: {
@@ -724,47 +611,97 @@ const Room = () => {
                         sm: "1rem",
                       },
                       fontWeight: 500,
-                      mb: 1,
-                      color: "text.primary",
+                    }}
+                  >
+                    Location:
+                  </Typography>
+                  <Typography
+                    sx={{
+                      fontSize: {
+                        xs: "0.875rem",
+                        sm: "1rem",
+                      },
+                      fontWeight: 500,
+                    }}
+                  >
+                    Capacity:
+                  </Typography>
+                  <Typography
+                    sx={{
+                      fontSize: {
+                        xs: "0.875rem",
+                        sm: "1rem",
+                      },
+                      fontWeight: 500,
                     }}
                   >
                     Facilities:
                   </Typography>
-                  <Box
+                  {roomDetails.data[0].is_virtual === "T" && (
+                    <Typography
+                      sx={{
+                        fontSize: {
+                          xs: "0.875rem",
+                          sm: "1rem",
+                        },
+                        fontWeight: 500,
+                      }}
+                    >
+                      Type:
+                    </Typography>
+                  )}
+                </Box>
+                <Box>
+                  <Typography
                     sx={{
-                      display: "flex",
-                      flexWrap: "wrap",
-                      gap: {
-                        xs: 4,
-                        sm: 8,
+                      fontSize: {
+                        xs: "0.875rem",
+                        sm: "1rem",
                       },
+                      whiteSpace: "nowrap",
                     }}
                   >
-                    {roomDetails.data[0].fasilitas.map((item: string, idx: string) => (
-                      <Box
-                        sx={{
-                          backgroundColor: "primary.main",
-                          color: "#fafafa",
-                          px: {
-                            xs: 6,
-                            sm: 10,
-                          },
-                          py: {
-                            xs: 2,
-                            sm: 4,
-                          },
-                          borderRadius: 2,
-                          fontSize: {
-                            xs: "0.75rem",
-                            sm: "0.875rem",
-                          },
-                        }}
-                        key={idx + item}
-                      >
-                        {item}
-                      </Box>
-                    ))}
-                  </Box>
+                    {roomDetails.data[0].lokasi}
+                  </Typography>
+                  <Typography
+                    sx={{
+                      fontSize: {
+                        xs: "0.875rem",
+                        sm: "1rem",
+                      },
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {roomDetails.data[0].kapasitas} participants
+                  </Typography>
+                  <Typography
+                    sx={{
+                      fontSize: {
+                        xs: "0.875rem",
+                        sm: "1rem",
+                      },
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {roomDetails.data[0].fasilitas && roomDetails.data[0].fasilitas.length > 0
+                      ? roomDetails.data[0].fasilitas.join(", ")
+                      : "-"}
+                  </Typography>
+                  {roomDetails.data[0].is_virtual === "T" && (
+                    <Typography
+                      sx={{
+                        fontSize: {
+                          xs: "0.875rem",
+                          sm: "1rem",
+                        },
+                        color: "primary.main",
+                        fontWeight: 500,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      Virtual Room (Zoom)
+                    </Typography>
+                  )}
                 </Box>
               </Box>
             </Grid>

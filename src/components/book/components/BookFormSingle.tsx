@@ -28,6 +28,7 @@ interface DefaultVal {
   ruangan: string;
   agenda: string;
   remark: string;
+  company: string;
   category: string;
   hour: number | undefined;
   minute: number | undefined;
@@ -54,6 +55,7 @@ interface BookingData {
   agenda: string;
   prtcpt_ctr: number;
   remark?: string;
+  company?: string;
   category: string;
   approval: string;
   is_active: string;
@@ -86,6 +88,7 @@ export default function BookFormSingle({ editData }: { editData: BookingData | u
       ruangan: "",
       agenda: "",
       remark: "",
+      company: "",
       category: "",
       hour: 0,
       minute: 0,
@@ -97,6 +100,7 @@ export default function BookFormSingle({ editData }: { editData: BookingData | u
   const register = form.register;
   const setValue = form.setValue;
   const formState = form.formState;
+  const watchCategory = form.watch("category");
 
   const [roomId, setRoomid] = useState<string>("");
   const [endTime, setEndTime] = useState<Date | null | undefined>();
@@ -140,6 +144,7 @@ export default function BookFormSingle({ editData }: { editData: BookingData | u
         ruangan: "",
         agenda: editData.agenda,
         remark: editData.remark || "",
+        company: editData.company || "",
         category: editData.category || "",
         isVirtual: editData.is_virtual === "T" ? "true" : "false",
       });
@@ -185,6 +190,7 @@ export default function BookFormSingle({ editData }: { editData: BookingData | u
       participant: Number(values.capacity) || 0,
       category: values.category,
       remark: values.remark,
+      company: values.company,
     };
     console.log(payload);
     try {
@@ -507,6 +513,16 @@ export default function BookFormSingle({ editData }: { editData: BookingData | u
                     },
                   }}
                 />
+                {watchCategory === "EXT" && (
+                  <TextFieldComp
+                    control={form.control}
+                    name="company"
+                    label="Company"
+                    rules={{
+                      required: "Company is required for external meetings",
+                    }}
+                  />
+                )}
                 <TextFieldComp multiline={true} rows={5} control={form.control} name="remark" label="Remark" />
                 {loading ? (
                   <Button type="submit" variant="contained" disabled>

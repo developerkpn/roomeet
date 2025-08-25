@@ -1,10 +1,10 @@
 "use client";
 
-import { Close, QrCodeScanner, Upload } from "@mui/icons-material";
+import { Close, QrCodeScanner } from "@mui/icons-material";
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Typography } from "@mui/material";
+import QrScanner from "qr-scanner";
 import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
-import QrScanner from "qr-scanner";
 
 interface QRScannerProps {
   onScan: (roomId: string) => void;
@@ -17,9 +17,7 @@ const QRScanner = ({ onScan, title, actionText, children }: QRScannerProps) => {
   const [open, setOpen] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
-  const [uploadProcessing, setUploadProcessing] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const qrScannerRef = useRef<QrScanner | null>(null);
 
   const showScanner = () => setOpen(true);
@@ -27,7 +25,6 @@ const QRScanner = ({ onScan, title, actionText, children }: QRScannerProps) => {
   const handleClose = () => {
     setOpen(false);
     setCameraError(null);
-    setUploadProcessing(false);
     stopCamera();
   };
 
@@ -80,8 +77,6 @@ const QRScanner = ({ onScan, title, actionText, children }: QRScannerProps) => {
       qrScannerRef.current = new QrScanner(
         videoRef.current,
         (result) => {
-          console.log("QR Code detected:", result.data);
-          toast.success("QR Code detected!");
           handleScanResult(result.data);
         },
         {
@@ -135,43 +130,6 @@ const QRScanner = ({ onScan, title, actionText, children }: QRScannerProps) => {
     handleClose();
   };
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    // Check if file is an image
-    if (!file.type.startsWith("image/")) {
-      toast.error("Please select an image file");
-      return;
-    }
-
-    setUploadProcessing(true);
-
-    try {
-      const result = await QrScanner.scanImage(file);
-
-      if (result) {
-        toast.success("QR Code detected from image!");
-        handleScanResult(result);
-      } else {
-        toast.error("No QR code found in the image");
-      }
-    } catch (error) {
-      console.error("Error scanning image:", error);
-      toast.error("Failed to scan QR code from image. Please try a clearer image.");
-    } finally {
-      setUploadProcessing(false);
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    }
-  };
-
-  const handleUploadClick = () => {
-    fileInputRef.current?.click();
-  };
-
   useEffect(() => {
     return () => {
       stopCamera();
@@ -210,20 +168,7 @@ const QRScanner = ({ onScan, title, actionText, children }: QRScannerProps) => {
             {!isScanning ? (
               <Box sx={{ display: "flex", flexDirection: "column", gap: 2, alignItems: "center" }}>
                 <Button variant="outlined" startIcon={<QrCodeScanner />} onClick={startCamera} size="large" fullWidth>
-                  Scan with Camera
-                </Button>
-                <Typography variant="body2" color="text.secondary">
-                  or
-                </Typography>
-                <Button
-                  variant="outlined"
-                  startIcon={<Upload />}
-                  onClick={handleUploadClick}
-                  size="large"
-                  fullWidth
-                  disabled={uploadProcessing}
-                >
-                  {uploadProcessing ? "Processing..." : "Upload QR Image"}
+                  Start Camera Scanner
                 </Button>
               </Box>
             ) : (
@@ -262,9 +207,6 @@ const QRScanner = ({ onScan, title, actionText, children }: QRScannerProps) => {
                     </Typography>
                   )}
                 </Box>
-                <Button variant="text" onClick={stopCamera} sx={{ mt: 1 }}>
-                  Stop Camera
-                </Button>
               </Box>
             )}
 
@@ -278,7 +220,7 @@ const QRScanner = ({ onScan, title, actionText, children }: QRScannerProps) => {
           <Typography variant="caption" color="text.secondary">
             {isScanning
               ? "The scanner will automatically detect QR codes when they appear in the camera view."
-              : "Scan the QR code with your camera or upload a QR image from your gallery."}
+              : "Point the camera at a QR code to scan it."}
           </Typography>
         </DialogContent>
 
@@ -287,16 +229,6 @@ const QRScanner = ({ onScan, title, actionText, children }: QRScannerProps) => {
             Close
           </Button>
         </DialogActions>
-
-        {/* Hidden file input for image upload */}
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleFileUpload}
-          accept="image/*"
-          style={{ display: "none" }}
-          capture="environment"
-        />
       </Dialog>
     </>
   );
